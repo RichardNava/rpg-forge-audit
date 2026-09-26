@@ -1,0 +1,337 @@
+{
+  "runId": "2026-09-12T00-03-17-868Z",
+  "comparison": "E",
+  "models": [
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "criticalPasses": 1,
+      "firstAttemptPasses": 1,
+      "replayCount": 4,
+      "replayRecoveries": 3,
+      "schemaFailures": 1,
+      "jsonFailures": 3,
+      "providerErrors": 0,
+      "semanticFailures": 5,
+      "totalCalls": 11,
+      "totalLatencyMs": 231738.25,
+      "meanLatencyMs": 33105.46428571428,
+      "medianLatencyMs": 32844.46,
+      "maxLatencyMs": 80842.65,
+      "meanFirstAttemptLatencyMs": 19996.184285714287,
+      "usageExposed": false,
+      "totalOutputTokens": 0,
+      "totalInputTokens": 0,
+      "qualification": "FAILS EXTRACTION CONTRACT",
+      "passedFixtureIds": [
+        "F6"
+      ]
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "criticalPasses": 1,
+      "firstAttemptPasses": 1,
+      "replayCount": 0,
+      "replayRecoveries": 0,
+      "schemaFailures": 0,
+      "jsonFailures": 0,
+      "providerErrors": 0,
+      "semanticFailures": 6,
+      "totalCalls": 7,
+      "totalLatencyMs": 22400.690000000002,
+      "meanLatencyMs": 3200.0985714285716,
+      "medianLatencyMs": 3092.14,
+      "maxLatencyMs": 4523.07,
+      "meanFirstAttemptLatencyMs": 3198.877142857143,
+      "usageExposed": false,
+      "totalOutputTokens": 0,
+      "totalInputTokens": 0,
+      "qualification": "FAILS EXTRACTION CONTRACT",
+      "passedFixtureIds": [
+        "F6"
+      ]
+    }
+  ],
+  "experiments": [
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F1",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F1",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F2",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": true,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F2",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F6",
+      "passed": true,
+      "classification": "PASS",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": true,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F6",
+      "passed": true,
+      "classification": "PASS",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": true,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F8",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": true,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F8",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F10",
+      "passed": false,
+      "classification": "F",
+      "outcomeKind": "invalid_proposal",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": true,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F10",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": false,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F11",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": false,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F11",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": false,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/openai/gpt-oss-120b",
+      "fixtureId": "F12",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": false,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": true,
+        "diagnosticsAppropriate": true
+      }
+    },
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "fixtureId": "F12",
+      "passed": false,
+      "classification": "D",
+      "outcomeKind": "ok",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": false,
+        "orderExact": false,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      }
+    }
+  ],
+  "gitStatusShort": "M apps/rules-worker/drizzle/meta/_journal.json\n M apps/rules-worker/package.json\n M apps/rules-worker/src/deps.ts\n M apps/rules-worker/src/env.ts\n M apps/rules-worker/src/handler.test.ts\n M apps/rules-worker/src/handler.ts\n M apps/rules-worker/src/index.ts\n M apps/rules-worker/src/infrastructure/ai-errors.ts\n M apps/rules-worker/src/infrastructure/db/schema.ts\n M apps/rules-worker/src/infrastructure/rulebook-cleaner.ts\n M apps/rules-worker/src/rulebook-handler.ts\n M apps/rules-worker/src/rules-context-handler.test.ts\n M apps/rules-worker/src/rules-context.workerd.test.ts\n M apps/rules-worker/src/test/fakes.ts\n M apps/rules-worker/src/transport/errors.ts\n M apps/rules-worker/src/transport/schemas.ts\n M apps/rules-worker/wrangler.jsonc\n M docs/architecture/adr/052-workerd-acroform-pdf-renderer.md\n M docs/architecture/adr/053-embedding-model-and-vectorize-metric.md\n M docs/architecture/adr/054-zod4-canonical-schema.md\n M docs/architecture/adr/README.md\n M docs/architecture/spikes/phase-14/01-pdf-page-extraction.md\n M docs/architecture/spikes/phase-14/02-embedding-benchmark.md\n M docs/architecture/spikes/phase-14/03-structured-ai-benchmark.md\n M docs/architecture/spikes/phase-14/04-pdf-acroform-renderer.md\n M docs/architecture/spikes/phase-14/08-closeout-cleanup-audit.md\n M packages/character-sheet-schema/src/index.test.ts\n M packages/character-sheet-schema/src/index.ts\n M packages/rules-context/src/index.ts\n M pnpm-lock.yaml\n M spikes/phase-14/package.json\n M spikes/phase-14/tsconfig.json\n M spikes/phase-14/vitest.config.ts\n?? .opencode/skills/vercel-react-best-practices/\n?? .opencode/skills/web-design-guidelines/\n?? apps/rules-worker/drizzle/0003_dazzling_punisher.sql\n?? apps/rules-worker/drizzle/meta/0003_snapshot.json\n?? apps/rules-worker/src/character-sheet-generation-workflow.ts\n?? apps/rules-worker/src/character-sheet-handler.test.ts\n?? apps/rules-worker/src/character-sheet-handler.ts\n?? apps/rules-worker/src/infrastructure/ai-sheet-generation.test.ts\n?? apps/rules-worker/src/infrastructure/ai-sheet-generation.ts\n?? apps/rules-worker/src/infrastructure/character-sheet-workflow.ts\n?? apps/rules-worker/src/infrastructure/character-sheet-workflow.workerd.test.ts\n?? apps/rules-worker/src/infrastructure/db/sheet-run-repository.ts\n?? apps/rules-worker/src/infrastructure/db/sheet-run-repository.workerd.test.ts\n?? apps/rules-worker/src/infrastructure/r2-sheet-artifacts.ts\n?? apps/rules-worker/src/infrastructure/r2-sheet-artifacts.workerd.test.ts\n?? docs/architecture/adr/055-section-title-degeneracy-personas.md\n?? packages/character-sheet-generation/\n?? skills-lock.json\n?? spikes/phase-14/extraction-validation/\n?? spikes/phase-14/scripts/run-dual-model-extraction-validation.ts\n?? spikes/phase-14/scripts/run-instruction-extraction-validation.ts\n?? spikes/phase-14/scripts/run-sheet-benchmark.ts\n?? spikes/phase-14/sheet-benchmark/\n?? tmp/"
+}

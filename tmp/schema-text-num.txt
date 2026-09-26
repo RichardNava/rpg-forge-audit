@@ -1,0 +1,52 @@
+export const TextFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("text"),
+  maxLength: z.number().int().min(1).max(10_000).optional(),
+});
+export type TextField = z.infer<typeof TextFieldSchema>;
+
+export const NumberFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("number"),
+  min: z.number().finite().optional(),
+  max: z.number().finite().optional(),
+  step: z.number().positive().finite().optional(),
+});
+export type NumberField = z.infer<typeof NumberFieldSchema>;
+
+export const TextareaFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("textarea"),
+  rows: z.number().int().min(1).max(20).optional(),
+  displayIntent: z.enum(["notes", "description", "narrative"]).optional(),
+});
+export type TextareaField = z.infer<typeof TextareaFieldSchema>;
+
+export const CheckboxFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("checkbox"),
+});
+export type CheckboxField = z.infer<typeof CheckboxFieldSchema>;
+
+export const RadioFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("radio"),
+  options: z.array(FieldOptionSchema).min(1).max(64),
+});
+export type RadioField = z.infer<typeof RadioFieldSchema>;
+
+export const SelectFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("select"),
+  options: z.array(FieldOptionSchema).min(1).max(64),
+});
+export type SelectField = z.infer<typeof SelectFieldSchema>;
+
+export const MultiselectFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("multiselect"),
+  options: z.array(FieldOptionSchema).min(1).max(64),
+});
+export type MultiselectField = z.infer<typeof MultiselectFieldSchema>;
+
+export const RatingFieldSchema = z.strictObject({

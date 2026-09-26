@@ -1,0 +1,97 @@
+    fieldById.set(candidate.key, fields[index]!);
+  }
+
+  assertNoFormulaCycles(fields);
+
+  const sourceMap: CharacterSheetSpec["sourceMap"] = {};
+  for (const section of plan.sections) {
+    for (const candidate of sectionFieldCandidates.get(section.key) ?? []) {
+      if (candidate.ruleIds.length === 0) {
+        continue;
+      }
+      sourceMap[candidate.key] = buildFieldProvenance(
+        candidate.ruleIds,
+        context,
+      );
+    }
+  }
+
+  const sections = plan.sections.map((section) => ({
+    id: section.key,
+    title: section.title,
+    layout: sectionLayouts.get(section.key) ?? {
+      mode: "grid",
+      columns: 1,
+      order: 0,
+      emphasis: null,
+    },
+    fieldIds: (sectionFieldCandidates.get(section.key) ?? []).map(
+      (candidate) => candidate.key,
+    ),
+  }));
+
+  const pagePlans = packSectionPages(
+    sections.map((section) => ({
+      key: section.id,
+      rowCost: 1 + Math.ceil(section.fieldIds.length / section.layout.columns),
+    })),
+    { pageRowCap: 30, maxPages: 12, maxSectionsPerPage: 16 },
+  );
+  const pages = pagePlans.map((page) => ({
+    id: page.id,
+    layout: {
+      orientation: "portrait" as const,
+      sizeIntent: null,
+      sectionIds: [...page.sectionIds],
+    },
+  }));
+
+  const spec: CharacterSheetSpec = {
+    schemaVersion: "1",
+    mode: plan.mode,
+    metadata: {
+      id: context.analysisId,
+      title: plan.mode === "npc" ? "NPC Sheet" : "Character Sheet",
+      description: null,
+      locale: null,
+    },
+    rulesContextId: context.analysisId,
+    pages,
+    sections,
+    fields: fields.map((field) => {
+      const placement = fieldPlacements.get(field.id) ?? {
+        order: 0,
+        columnStart: 1,
+        columnSpan: 1,
+        rowSpan: 1,
+        breakBefore: false,
+      };
+      return {
+        ...field,
+        type: field.type,
+        ...(field.type === "calculated"
+          ? { formula: formulaById.get(field.id)! }
+          : {}),
+        placement,
+      } as CharacterSheetField;
+    }),
+    values: {},
+    theme: compileTheme(plan.mode),
+    sourceMap,
+  };
+
+  return CharacterSheetSpecSchema.parse(spec);
+}
+
+export class SheetCompileError extends Error {
+  readonly reason: "candidate_invalid" | "invariant";
+  readonly details: string;
+
+  constructor(reason: "candidate_invalid" | "invariant", details: string) {
+    super(details);
+    this.name = "SheetCompileError";
+    this.reason = reason;
+    this.details = details;
+  }
+}
+

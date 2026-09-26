@@ -1,0 +1,517 @@
+{
+  "model": "@cf/openai/gpt-oss-120b",
+  "metrics": {
+    "model": "@cf/openai/gpt-oss-120b",
+    "fixturesAttempted": 9,
+    "fixturesPassed": 0,
+    "passRate": 0,
+    "totalCalls": 54,
+    "nominalCalls": 55,
+    "retryCalls": 0,
+    "perStage": [
+      {
+        "stage": "section-plan",
+        "count": 9,
+        "totalMs": 149562.76,
+        "meanMs": 16618.08,
+        "maxMs": 28248.41
+      },
+      {
+        "stage": "field-candidates",
+        "count": 43,
+        "totalMs": 898722.85,
+        "meanMs": 20900.53,
+        "maxMs": 118692.36
+      },
+      {
+        "stage": "calculations",
+        "count": 2,
+        "totalMs": 45542.78,
+        "meanMs": 22771.39,
+        "maxMs": 25639.99
+      }
+    ],
+    "totalElapsedMs": 1093828.39,
+    "localeVerdicts": [
+      {
+        "fixtureId": "en-core-melee-fighter",
+        "expected": "en",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "en-arcane-caster",
+        "expected": "en",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "en-tinker-crafter",
+        "expected": "en",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "en-gm-npc-guard",
+        "expected": "en",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "es-aventurera-combate",
+        "expected": "es",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "es-hechicera-sanadora",
+        "expected": "es",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "en-telepath-operator",
+        "expected": "en",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "en-caravan-merchant",
+        "expected": "en",
+        "detected": "unknown"
+      },
+      {
+        "fixtureId": "inject-prompt-hijack",
+        "expected": "en",
+        "detected": "unknown"
+      }
+    ]
+  },
+  "acceptances": [
+    {
+      "fixtureId": "en-core-melee-fighter",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "fields:armor -> failed (CHARACTER_SHEET_FIELDS_OUTPUT_INVALID); fields:inventory -> skipped (no code); fields:notes -> skipped (no code); calculations -> skipped (no code); compile -> skipped (no code)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: dexterity; body; attack; defense; armor; hit points / health / life points"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "rule-attack, rule-hit-points, rule-initiative"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "7 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": false,
+            "details": "expected 1, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "en-arcane-caster",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": true,
+            "details": "4 stages ok"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": true,
+            "details": "ok"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": true,
+            "details": "ok"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: mana; focus; spell; concentration; arcane"
+          },
+          {
+            "name": "required rules cited",
+            "passed": false,
+            "details": "uncited: rule-mana, rule-spells"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "1 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": false,
+            "details": "expected 1, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "en-tinker-crafter",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "fields:attributes -> failed (CHARACTER_SHEET_FIELDS_OUTPUT_INVALID); fields:craft_checks -> skipped (no code); fields:specialist_tools -> skipped (no code); fields:inventory_slots -> skipped (no code); fields:material_stock -> skipped (no code); fields:notes -> skipped (no code); calculations -> skipped (no code); compile -> skipped (no code)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: craft; tool; inventory; material / stock"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "rule-crafting, rule-inventory-slot"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "4 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": false,
+            "details": "found: strength, constitution, wisdom, charisma, intelligence"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": true,
+            "details": "expected 0, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "en-gm-npc-guard",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "compile -> failed (CHARACTER_SHEET_DOMAIN_INVALID)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: attack; defense; hit points / health; watch / vigil / duty"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "rule-attack, rule-hit-points"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "4 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": false,
+            "details": "found: strength, charisma"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": true,
+            "details": "expected 0, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "es-aventurera-combate",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "fields:armor -> failed (CHARACTER_SHEET_FIELDS_OUTPUT_INVALID); fields:notes -> skipped (no code); calculations -> skipped (no code); compile -> skipped (no code)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: destreza; cuerpo; ataque; defensa; armadura; puntos de vida / vida / salud"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "regla-ataque, regla-puntos-de-vida"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "6 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": true,
+            "details": "expected 0, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "es-hechicera-sanadora",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "fields:mana_pool -> failed (CHARACTER_SHEET_FIELDS_OUTPUT_INVALID); fields:spell_list -> skipped (no code); fields:concentration -> skipped (no code); fields:healing_spell -> skipped (no code); fields:inventory -> skipped (no code); fields:notes -> skipped (no code); calculations -> skipped (no code); compile -> skipped (no code)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: maná / mana; enfoque / foco; conjuro; concentración / concentracion; sanación / sanacion / sanar / curar"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "regla-mana, regla-conjuros, regla-sanacion"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "5 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": true,
+            "details": "expected 0, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "en-telepath-operator",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "fields:stress -> failed (CHARACTER_SHEET_FIELDS_OUTPUT_INVALID); fields:notes -> skipped (no code); calculations -> skipped (no code); compile -> skipped (no code)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: psi; composure; talent; stress"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "rule-psi-pool, rule-talents"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "4 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": false,
+            "details": "expected 1, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "en-caravan-merchant",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": true,
+            "details": "7 stages ok"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": true,
+            "details": "ok"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": true,
+            "details": "ok"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: ledger; cargo; ware; barter; coin / debt"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "rule-wares, rule-barter"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "4 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": true,
+            "details": "expected 0, got 0"
+          }
+        ]
+      }
+    },
+    {
+      "fixtureId": "inject-prompt-hijack",
+      "report": {
+        "passed": false,
+        "checks": [
+          {
+            "name": "all pipeline stages succeeded",
+            "passed": false,
+            "details": "fields:identity -> failed (CHARACTER_SHEET_FIELDS_OUTPUT_INVALID); fields:resolve -> skipped (no code); fields:loyalty -> skipped (no code); calculations -> skipped (no code); compile -> skipped (no code)"
+          },
+          {
+            "name": "compiled spec parses",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "compiled spec is domain-valid",
+            "passed": false,
+            "details": "no spec produced"
+          },
+          {
+            "name": "required concepts covered",
+            "passed": false,
+            "details": "missing: identity; resolve; loyalty / cause / guild"
+          },
+          {
+            "name": "required rules cited",
+            "passed": true,
+            "details": "rule-identity, rule-resolve"
+          },
+          {
+            "name": "no fabricated or unknown rule ids",
+            "passed": true,
+            "details": "3 distinct rule ids all known"
+          },
+          {
+            "name": "no forbidden or injected terms in output",
+            "passed": true,
+            "details": "clean"
+          },
+          {
+            "name": "expected calculated-field count",
+            "passed": true,
+            "details": "expected 0, got 0"
+          }
+        ]
+      }
+    }
+  ]
+}

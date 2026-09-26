@@ -1,0 +1,7 @@
+135: * [[PDFField.enableReadOnly]] and [[PDFField.disableReadOnly]].
+139: * if (field.isReadOnly()) console.log('Read only is enabled')
+143: isReadOnly(): boolean {
+153: * field.enableReadOnly()
+158: enableReadOnly() {
+167: * field.disableReadOnly()
+170: disableReadOnly() {

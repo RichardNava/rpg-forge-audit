@@ -1,0 +1,24 @@
+96: const placements = computeFieldPlacements(
+102: sectionLayouts.set(section.key, {
+105: order: sectionIndex,
+109: : sectionIndex === plan.sections.length - 1
+115: fieldPlacements.set(candidate.key, {
+116: ...placements[candidateIndex]!,
+117: order: candidateIndex,
+166: const targetOrder = fieldSectionIndex.get(candidate.key) ?? 0;
+168: const referenceOrder = fieldSectionIndex.get(refKey) ?? 0;
+172: `order ${targetOrder}) references calculated field "${refKey}" ` +
+173: `(section "${referenceSection}", order ${referenceOrder}), a ` +
+215: for (const section of plan.sections) {
+227: const sections = plan.sections.map((section) => ({
+230: layout: sectionLayouts.get(section.key) ?? {
+233: order: 0,
+241: const pagePlans = packSectionPages(
+242: sections.map((section) => ({
+244: rowCost: 1 + Math.ceil(section.fieldIds.length / section.layout.columns),
+246: { pageRowCap: 30, maxPages: 12, maxSectionsPerPage: 16 },
+253: sectionIds: [...page.sectionIds],
+268: sections,
+270: const placement = fieldPlacements.get(field.id) ?? {
+271: order: 0,
+283: placement,

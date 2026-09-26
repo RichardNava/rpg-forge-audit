@@ -1,0 +1,479 @@
+{
+  "runId": "2026-09-11T23-49-53-785Z",
+  "overall": "C",
+  "aggregate": {
+    "attempted": 13,
+    "passed": 2,
+    "criticalPassed": 0,
+    "criticalAttempted": 7,
+    "failureClassCounts": {
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 8,
+      "E": 0,
+      "F": 3
+    },
+    "replayUsedCount": 3,
+    "recoveredOnReplayCount": 0,
+    "totalCalls": 16,
+    "totalLatencyMs": 30924.01,
+    "totalOutputTokens": 0
+  },
+  "evaluations": [
+    {
+      "fixtureId": "F1",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": true,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "field",
+          "op": "remove",
+          "targetLabel": "V"
+        }
+      ],
+      "notes": [
+        "instruction kind multiset mismatch"
+      ]
+    },
+    {
+      "fixtureId": "F2",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "field",
+          "op": "replace",
+          "sourceLabel": "C",
+          "replacementLabel": "V"
+        }
+      ],
+      "notes": [
+        "instruction parameter multiset mismatch"
+      ]
+    },
+    {
+      "fixtureId": "F3",
+      "passed": false,
+      "critical": false,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": true,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "field",
+          "op": "replace",
+          "sourceLabel": "S",
+          "replacementLabel": "M"
+        }
+      ],
+      "notes": [
+        "instruction kind multiset mismatch"
+      ]
+    },
+    {
+      "fixtureId": "F4",
+      "passed": false,
+      "critical": false,
+      "outcomeKind": "invalid_proposal",
+      "classification": "F",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "schema_fail",
+        "schema_fail"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [],
+      "notes": [
+        "instruction count mismatch: expected 1, got 0",
+        "portrait description missed required explicit detail tokens"
+      ]
+    },
+    {
+      "fixtureId": "F5",
+      "passed": false,
+      "critical": false,
+      "outcomeKind": "invalid_proposal",
+      "classification": "F",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "schema_fail",
+        "schema_fail"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [],
+      "notes": [
+        "instruction count mismatch: expected 1, got 0",
+        "portrait description missed required explicit detail tokens"
+      ]
+    },
+    {
+      "fixtureId": "F6",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "invalid_proposal",
+      "classification": "F",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": true,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": true,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "schema_fail",
+        "schema_fail"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [],
+      "notes": [
+        "portrait description missed required explicit detail tokens"
+      ]
+    },
+    {
+      "fixtureId": "F7",
+      "passed": true,
+      "critical": false,
+      "outcomeKind": "ok",
+      "classification": "PASS",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": true,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "name",
+          "value": "Gruk"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "fixtureId": "F8",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "name",
+          "value": "Large Bluish Troll"
+        },
+        {
+          "kind": "name",
+          "value": "Bluish Troll with Goatee"
+        },
+        {
+          "kind": "name",
+          "value": "Troll with Eye Patch"
+        }
+      ],
+      "notes": [
+        "instruction count mismatch: expected 1, got 3",
+        "portrait description missed required explicit detail tokens"
+      ]
+    },
+    {
+      "fixtureId": "F9",
+      "passed": true,
+      "critical": false,
+      "outcomeKind": "ok",
+      "classification": "PASS",
+      "checks": {
+        "countExact": true,
+        "kindsExact": true,
+        "paramsExact": true,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [
+        "unsupported-instruction"
+      ],
+      "gatingActed": false,
+      "finalSignatures": [],
+      "notes": []
+    },
+    {
+      "fixtureId": "F10",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": false,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "field",
+          "op": "replace",
+          "sourceLabel": "S",
+          "replacementLabel": "V"
+        }
+      ],
+      "notes": [
+        "instruction count mismatch: expected 0, got 1",
+        "forbidden op appeared in the final result: field.replace"
+      ]
+    },
+    {
+      "fixtureId": "F11",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": false,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": false,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "name",
+          "value": "Gruk"
+        },
+        {
+          "kind": "field",
+          "op": "replace",
+          "sourceLabel": "C",
+          "replacementLabel": "V"
+        }
+      ],
+      "notes": [
+        "instruction count mismatch: expected 4, got 2",
+        "instruction order differs from the stated request order",
+        "portrait description missed required explicit detail tokens"
+      ]
+    },
+    {
+      "fixtureId": "F12",
+      "passed": false,
+      "critical": true,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": false,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [],
+      "gatingActed": false,
+      "finalSignatures": [
+        {
+          "kind": "name",
+          "value": "Gruk"
+        },
+        {
+          "kind": "field",
+          "op": "replace",
+          "sourceLabel": "C",
+          "replacementLabel": "V"
+        }
+      ],
+      "notes": [
+        "instruction count mismatch: expected 3, got 2",
+        "instruction order differs from the stated request order"
+      ]
+    },
+    {
+      "fixtureId": "F13",
+      "passed": false,
+      "critical": false,
+      "outcomeKind": "ok",
+      "classification": "D",
+      "checks": {
+        "countExact": false,
+        "kindsExact": false,
+        "paramsExact": false,
+        "orderExact": true,
+        "gatingRespected": true,
+        "noFabricationFlags": true,
+        "detailPreserved": true,
+        "attemptsWithinBudget": true,
+        "replayUsed": false,
+        "recoveredOnReplay": false,
+        "diagnosticsAppropriate": true
+      },
+      "attempts": [
+        "ok"
+      ],
+      "diagnosticCodes": [
+        "unsupported-instruction"
+      ],
+      "gatingActed": false,
+      "finalSignatures": [],
+      "notes": [
+        "instruction count mismatch: expected 1, got 0"
+      ]
+    }
+  ]
+}

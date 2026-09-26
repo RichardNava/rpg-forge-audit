@@ -1,0 +1,66 @@
+export const CharacterSheetMetadataSchema = z.strictObject({
+  id: CharacterSheetIdSchema,
+  title: shortTextSchema,
+  description: longTextSchema.nullable(),
+  locale: z
+    .string()
+    .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
+    .nullable(),
+});
+export type CharacterSheetMetadata = z.infer<
+  typeof CharacterSheetMetadataSchema
+>;
+
+export const PageLayoutSchema = z.strictObject({
+  orientation: z.enum(["portrait", "landscape"]),
+  sizeIntent: z.enum(["letter", "a4", "compact"]).nullable(),
+  sectionIds: z.array(SectionIdSchema).min(1).max(MAX_SECTIONS_PER_PAGE),
+});
+export type PageLayout = z.infer<typeof PageLayoutSchema>;
+
+export const CharacterSheetPageSchema = z.strictObject({
+  id: PageIdSchema,
+  layout: PageLayoutSchema,
+});
+export type CharacterSheetPage = z.infer<typeof CharacterSheetPageSchema>;
+
+export const SectionLayoutSchema = z.strictObject({
+  mode: z.enum(["flow", "grid"]),
+  columns: z.number().int().min(1).max(MAX_LAYOUT_COLUMNS),
+  order: z.number().int().min(0).max(999),
+  emphasis: z.enum(["normal", "primary", "secondary"]).nullable(),
+});
+export type SectionLayout = z.infer<typeof SectionLayoutSchema>;
+
+export const CharacterSheetSectionSchema = z.strictObject({
+  id: SectionIdSchema,
+  title: shortTextSchema,
+  layout: SectionLayoutSchema,
+  fieldIds: z.array(FieldIdSchema).min(1).max(MAX_FIELDS_PER_SECTION),
+});
+export type CharacterSheetSection = z.infer<typeof CharacterSheetSectionSchema>;
+
+export const FieldPlacementSchema = z.strictObject({
+  order: z.number().int().min(0).max(9_999),
+  columnStart: z.number().int().min(1).max(MAX_LAYOUT_COLUMNS),
+  columnSpan: z.number().int().min(1).max(MAX_LAYOUT_COLUMNS),
+  rowSpan: z.number().int().min(1).max(MAX_ROW_SPAN),
+  breakBefore: z.boolean(),
+});
+export type FieldPlacement = z.infer<typeof FieldPlacementSchema>;
+
+const fieldBaseShape = {
+  id: FieldIdSchema,
+  label: shortTextSchema,
+  requiredForPlayableNpc: z.boolean(),
+  placement: FieldPlacementSchema,
+} as const;
+
+export const FieldOptionSchema = z.strictObject({
+  value: identifierSchema,
+  label: shortTextSchema,
+});
+export type FieldOption = z.infer<typeof FieldOptionSchema>;
+
+export const TableColumnSchema = z.strictObject({
+  id: identifierSchema,

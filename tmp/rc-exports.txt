@@ -1,0 +1,30 @@
+3: export const RULES_CONTEXT_VERSION = "1" as const;
+31: * Additive exports for provider-edge validation. Provider ports may validate
+34: export const RuleIdentifierSchema = identifierSchema;
+35: export type RuleIdentifier = z.infer<typeof RuleIdentifierSchema>;
+36: export const RuleShortTextSchema = shortTextSchema;
+37: export const RuleSummarySchema = summarySchema;
+39: // Private recursive typing aid for schema construction; JsonValue is inferred below.
+40: type BoundedJsonValue =
+45: | BoundedJsonValue[]
+46: | { [key: string]: BoundedJsonValue };
+56: function createJsonValueSchema(
+58: ): z.ZodType<BoundedJsonValue> {
+63: const nestedValueSchema = createJsonValueSchema(remainingDepth - 1);
+81: export const JsonValueSchema = createJsonValueSchema(MAX_JSON_VALUE_DEPTH);
+82: export type JsonValue = z.infer<typeof JsonValueSchema>;
+84: export const RulesContextIdSchema = identifierSchema;
+85: export type RulesContextId = z.infer<typeof RulesContextIdSchema>;
+87: export const RuleSourceIdSchema = identifierSchema;
+88: export type RuleSourceId = z.infer<typeof RuleSourceIdSchema>;
+90: export const NormalizedRuleIdSchema = identifierSchema;
+91: export type NormalizedRuleId = z.infer<typeof NormalizedRuleIdSchema>;
+93: export const RuleOverrideIdSchema = identifierSchema;
+94: export type RuleOverrideId = z.infer<typeof RuleOverrideIdSchema>;
+96: export const RuleConflictIdSchema = identifierSchema;
+97: export type RuleConflictId = z.infer<typeof RuleConflictIdSchema>;
+99: export const PresetRuleSourceSchema = z.strictObject({
+106: export type PresetRuleSource = z.infer<typeof PresetRuleSourceSchema>;
+108: export const UploadedRulebookSourceSchema = z.strictObject({
+117: export type UploadedRulebookSource = z.infer<
+121: export const ChatRuleSourceSchema = z.strictObject({

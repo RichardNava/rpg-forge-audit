@@ -1,0 +1,142 @@
+  ...fieldBaseShape,
+  type: z.literal("rating"),
+  scale: z.strictObject({
+    min: z.number().int().min(0).max(100),
+    max: z.number().int().min(0).max(100),
+    step: z.number().int().positive().max(100),
+  }),
+});
+export type RatingField = z.infer<typeof RatingFieldSchema>;
+
+export const ResourceFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("resource"),
+  currentFieldId: FieldIdSchema,
+  maxFieldId: FieldIdSchema,
+  displayMode: z.enum(["current-max", "bar"]),
+});
+export type ResourceField = z.infer<typeof ResourceFieldSchema>;
+
+export const ListFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("list"),
+  itemLabel: shortTextSchema,
+  maxItems: z.number().int().min(1).max(100).optional(),
+});
+export type ListField = z.infer<typeof ListFieldSchema>;
+
+export const TableFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("table"),
+  columns: z.array(TableColumnSchema).min(1).max(16),
+  maxRows: z.number().int().min(1).max(100).optional(),
+});
+export type TableField = z.infer<typeof TableFieldSchema>;
+
+export const CalculatedFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("calculated"),
+  formula: FormulaSchema,
+  displayFormat: z.enum(["number", "integer", "percent"]).optional(),
+});
+export type CalculatedField = z.infer<typeof CalculatedFieldSchema>;
+
+export const ImageFieldSchema = z.strictObject({
+  ...fieldBaseShape,
+  type: z.literal("image"),
+  slot: z.strictObject({
+    aspectRatio: z.enum(["square", "portrait", "landscape", "free"]),
+    maxColumnSpan: z.number().int().min(1).max(MAX_LAYOUT_COLUMNS),
+    altText: shortTextSchema.nullable(),
+  }),
+});
+export type ImageField = z.infer<typeof ImageFieldSchema>;
+
+/** Field variants have bounded, type-specific data and never accept arbitrary HTML, CSS, SVG, or image bytes. */
+export const CharacterSheetFieldSchema = z.discriminatedUnion("type", [
+  TextFieldSchema,
+  NumberFieldSchema,
+  TextareaFieldSchema,
+  CheckboxFieldSchema,
+  RadioFieldSchema,
+  SelectFieldSchema,
+  MultiselectFieldSchema,
+  RatingFieldSchema,
+  ResourceFieldSchema,
+  ListFieldSchema,
+  TableFieldSchema,
+  CalculatedFieldSchema,
+  ImageFieldSchema,
+]);
+export type CharacterSheetField = z.infer<typeof CharacterSheetFieldSchema>;
+
+export const ThemeSpecSchema = z.strictObject({
+  style: z.enum(["minimal", "classic", "ornate", "modern", "utility"]),
+  typography: z.enum(["serif", "sans-serif", "monospace", "handwritten"]),
+  density: z.enum(["compact", "standard", "spacious"]),
+  borderStyle: z.enum(["none", "line", "double-line", "ornamental"]),
+  decorationIntensity: z.enum(["none", "subtle", "moderate", "high"]),
+  accentColor: z.string().regex(colorPattern, "accentColor must use #RRGGBB."),
+  backgroundIntent: z.enum(["none", "light", "dark", "parchment", "textured"]),
+});
+export type ThemeSpec = z.infer<typeof ThemeSpecSchema>;
+
+export const FieldProvenanceSchema = z.strictObject({
+  ruleIds: z.array(NormalizedRuleIdSchema).min(1).max(MAX_SOURCE_MAP_RULES),
+  citations: z
+    .array(RuleCitationSchema)
+    .max(MAX_SOURCE_MAP_CITATIONS)
+    .optional(),
+});
+export type FieldProvenance = z.infer<typeof FieldProvenanceSchema>;
+
+/**
+ * Canonical serializable character-sheet contract. It holds renderer-neutral
+ * structure and values, not PDF bytes, CSS, HTML, or executable formulas.
+ */
+export const CharacterSheetSpecSchema = z.strictObject({
+  schemaVersion: z.literal(CHARACTER_SHEET_SPEC_VERSION),
+  mode: CharacterSheetModeSchema,
+  metadata: CharacterSheetMetadataSchema,
+  rulesContextId: RulesContextIdSchema,
+  pages: z.array(CharacterSheetPageSchema).min(1).max(MAX_PAGES),
+  sections: z.array(CharacterSheetSectionSchema).min(1).max(MAX_SECTIONS),
+  fields: z.array(CharacterSheetFieldSchema).min(1).max(MAX_FIELDS),
+  values: z
+    .record(FieldIdSchema, JsonValueSchema)
+    .superRefine((value, context) => {
+      if (Object.keys(value).length > MAX_FIELD_VALUE_ENTRIES) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `A sheet may contain at most ${MAX_FIELD_VALUE_ENTRIES} field values.`,
+        });
+      }
+    }),
+  theme: ThemeSpecSchema,
+  sourceMap: z
+    .record(FieldIdSchema, FieldProvenanceSchema)
+    .superRefine((value, context) => {
+      if (Object.keys(value).length > MAX_SOURCE_MAP_ENTRIES) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `A sheet may contain at most ${MAX_SOURCE_MAP_ENTRIES} provenance entries.`,
+        });
+      }
+    }),
+});
+export type CharacterSheetSpec = z.infer<typeof CharacterSheetSpecSchema>;
+
+export const CharacterSheetDomainIssueCodeSchema = z.enum([
+  "DUPLICATE_PAGE_ID",
+  "DUPLICATE_SECTION_ID",
+  "DUPLICATE_FIELD_ID",
+  "UNKNOWN_SECTION_REFERENCE",
+  "DUPLICATE_PAGE_SECTION_REFERENCE",
+  "ORPHAN_SECTION",
+  "DUPLICATE_SECTION_REFERENCE",
+  "DUPLICATE_SECTION_ORDER",
+  "UNKNOWN_FIELD_REFERENCE",
+  "DUPLICATE_SECTION_FIELD_REFERENCE",
+  "ORPHAN_FIELD",
+  "DUPLICATE_FIELD_REFERENCE",
+  "FIELD_PLACEMENT_OUT_OF_BOUNDS",

@@ -1,0 +1,92 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rules-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "ai": {
+    "binding": "AI",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rpg-forge-rules-local",
+      "migrations_dir": "drizzle",
+    },
+  ],
+  "workflows": [
+    {
+      "name": "rules-worker-rulebook-ingestion",
+      "binding": "RULEBOOK_INGESTION_WORKFLOW",
+      "class_name": "RulebookIngestionWorkflow",
+    },
+    {
+      "name": "rules-worker-rules-analysis",
+      "binding": "RULES_ANALYSIS_WORKFLOW",
+      "class_name": "RulesAnalysisWorkflow",
+    },
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"],
+  },
+  "env": {
+    "local": {
+      "ai": {
+        "binding": "AI",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "rpg-forge-rules-local",
+          "migrations_dir": "drizzle",
+        },
+      ],
+      "workflows": [
+        {
+          "name": "rules-worker-rulebook-ingestion",
+          "binding": "RULEBOOK_INGESTION_WORKFLOW",
+          "class_name": "RulebookIngestionWorkflow",
+        },
+        {
+          "name": "rules-worker-rules-analysis",
+          "binding": "RULES_ANALYSIS_WORKFLOW",
+          "class_name": "RulesAnalysisWorkflow",
+        },
+      ],
+      /**
+       * LOCAL-ONLY R2 binding. Production bucket identity is deliberately
+       * deferred: the root environment has no R2 binding, so upload fails
+       * closed until an approved remote bucket is explicitly configured.
+       */
+      "r2_buckets": [
+        {
+          "binding": "RULEBOOK_BUCKET",
+          "bucket_name": "rpg-forge-rules-local",
+        },
+      ],
+    },
+  },
+  "observability": {
+    "enabled": true,
+  },
+  /**
+   * DEFERRED PRODUCTION RESOURCE: Cloudflare Rate Limiting binding.
+   *
+   * The rate-limit boundary is implemented as an application port
+   * (RateLimitPort). The worker uses the env.RATE_LIMITER binding when the
+   * runtime provides one. The in-memory fallback is allowed only with the
+   * explicit local RATE_LIMIT_MODE=local setting; all other modes fail closed
+   * when the binding is absent.
+   *
+   * No remote resource is created in Phase 14.2. When wiring production, add
+   * a real namespace id (an integer unique to the Cloudflare account) and uncomment:
+   *
+   * "ratelimits": [
+   *   {
+   *     "name": "RATE_LIMITER",
+   *     "namespace_id": "<ACCOUNT_UNIQUE_INTEGER>",
+   *     "simple": { "limit": 20, "period": 60 }
+   *   }
+   * ]
+   */
+}

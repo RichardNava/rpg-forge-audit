@@ -1,0 +1,108 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rules-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-12",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "ai": {
+    "binding": "AI",
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rpg-forge-rules-local",
+      "migrations_dir": "drizzle",
+    },
+  ],
+  "workflows": [
+    {
+      "name": "rules-worker-rulebook-ingestion",
+      "binding": "RULEBOOK_INGESTION_WORKFLOW",
+      "class_name": "RulebookIngestionWorkflow",
+    },
+    {
+      "name": "rules-worker-rules-analysis",
+      "binding": "RULES_ANALYSIS_WORKFLOW",
+      "class_name": "RulesAnalysisWorkflow",
+    },
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"],
+  },
+  "env": {
+    "local": {
+      "vars": {
+        // The in-memory limiter is intentionally local-only; remote deployments
+        // must provide the Cloudflare RATE_LIMITER binding instead.
+        "RATE_LIMIT_MODE": "local",
+        "TURNSTILE_MODE": "local",
+        "SHEET_VISION_MODEL": "@cf/meta/llama-4-scout-17b-16e-instruct",
+        // Prints raw model output only for a deliberate local diagnostic session.
+        "SHEET_VISION_DEBUG_RAW_RESPONSE": "true",
+      },
+      "ai": {
+        "binding": "AI",
+        // Workers AI has no local emulator. This binding uses the account while
+        // the named environment keeps D1 and R2 local.
+        "remote": true,
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "rpg-forge-rules-local",
+          "migrations_dir": "drizzle",
+        },
+      ],
+      "workflows": [
+        {
+          "name": "rules-worker-rulebook-ingestion",
+          "binding": "RULEBOOK_INGESTION_WORKFLOW",
+          "class_name": "RulebookIngestionWorkflow",
+        },
+        {
+          "name": "rules-worker-rules-analysis",
+          "binding": "RULES_ANALYSIS_WORKFLOW",
+          "class_name": "RulesAnalysisWorkflow",
+        },
+      ],
+      /**
+       * LOCAL-ONLY R2 bindings. Production bucket identities are deliberately
+       * deferred: the root environment has no R2 binding, so uploads fail
+       * closed until approved remote buckets are explicitly configured.
+       */
+      "r2_buckets": [
+        {
+          "binding": "RULEBOOK_BUCKET",
+          "bucket_name": "rpg-forge-rules-local",
+        },
+        {
+          "binding": "SHEET_ARTIFACTS",
+          "bucket_name": "rpg-forge-sheets-local",
+        },
+      ],
+    },
+  },
+  "observability": {
+    "enabled": true,
+  },
+  /**
+   * DEFERRED PRODUCTION RESOURCE: Cloudflare Rate Limiting binding.
+   *
+   * The rate-limit boundary is implemented as an application port
+   * (RateLimitPort). The worker uses the env.RATE_LIMITER binding when the
+   * runtime provides one. The in-memory fallback is allowed only with the
+   * explicit local RATE_LIMIT_MODE=local setting; all other modes fail closed
+   * when the binding is absent.
+   *
+   * No remote resource is created in Phase 14.2. When wiring production, add
+   * a real namespace id (an integer unique to the Cloudflare account) and uncomment:
+   *
+   * "ratelimits": [
+   *   {
+   *     "name": "RATE_LIMITER",
+   *     "namespace_id": "<ACCOUNT_UNIQUE_INTEGER>",
+   *     "simple": { "limit": 20, "period": 60 }
+   *   }
+   * ]
+   */
+}

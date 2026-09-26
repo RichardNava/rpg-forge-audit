@@ -1,0 +1,243 @@
+{
+  "runId": "2026-09-11T09-13-28-856Z",
+  "models": [
+    {
+      "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      "slug": "llama-3.3-70b",
+      "fixturesPassed": 0,
+      "fixturesAttempted": 1,
+      "passRate": 0,
+      "totalCalls": 2,
+      "plannedCalls": 1,
+      "firstAttempts": 1,
+      "correctionReplays": 1,
+      "correctionSuccesses": 0,
+      "correctionFailures": 1,
+      "perStageAttempts": [
+        {
+          "stage": "section-plan",
+          "firstAttempts": 1,
+          "replays": 1,
+          "successReplays": 0,
+          "failedReplays": 1
+        }
+      ],
+      "totalElapsedMs": 50390.44,
+      "perStage": [
+        {
+          "stage": "section-plan",
+          "count": 2,
+          "totalMs": 11631.23,
+          "meanMs": 5815.62,
+          "maxMs": 7584.19
+        }
+      ],
+      "localeVerdicts": [
+        {
+          "fixtureId": "en-gm-npc-guard",
+          "expected": "en",
+          "detected": null,
+          "verdict": "insufficient",
+          "matches": {
+            "en": 0,
+            "es": 0
+          }
+        }
+      ],
+      "fixtures": [
+        {
+          "fixtureId": "en-gm-npc-guard",
+          "persona": "human-locale",
+          "passed": false,
+          "taxonomy": "structured_output",
+          "checks": [
+            {
+              "name": "all pipeline stages succeeded",
+              "passed": false,
+              "details": "section-plan -> failed (CHARACTER_SHEET_PLAN_OUTPUT_INVALID); calculations -> skipped (no code); compile -> skipped (no code)"
+            },
+            {
+              "name": "compiled spec parses",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "compiled spec is domain-valid",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "required concepts covered",
+              "passed": false,
+              "details": "missing: attack; defense; hit points / health; watch / vigil / duty"
+            },
+            {
+              "name": "required rules cited",
+              "passed": false,
+              "details": "uncited: rule-attack, rule-hit-points"
+            },
+            {
+              "name": "no fabricated or unknown rule ids",
+              "passed": true,
+              "details": "0 distinct rule ids all known"
+            },
+            {
+              "name": "no forbidden or injected terms in output",
+              "passed": true,
+              "details": "clean"
+            },
+            {
+              "name": "expected calculated-field count",
+              "passed": true,
+              "details": "expected 0, got 0"
+            }
+          ]
+        },
+        {
+          "fixtureId": "en-gm-npc-guard",
+          "persona": "neutral",
+          "passed": false,
+          "taxonomy": "structured_output",
+          "checks": [
+            {
+              "name": "all pipeline stages succeeded",
+              "passed": false,
+              "details": "section-plan -> failed (CHARACTER_SHEET_PLAN_OUTPUT_INVALID); calculations -> skipped (no code); compile -> skipped (no code)"
+            },
+            {
+              "name": "compiled spec parses",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "compiled spec is domain-valid",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "required concepts covered",
+              "passed": false,
+              "details": "missing: attack; defense; hit points / health; watch / vigil / duty"
+            },
+            {
+              "name": "required rules cited",
+              "passed": false,
+              "details": "uncited: rule-attack, rule-hit-points"
+            },
+            {
+              "name": "no fabricated or unknown rule ids",
+              "passed": true,
+              "details": "0 distinct rule ids all known"
+            },
+            {
+              "name": "no forbidden or injected terms in output",
+              "passed": true,
+              "details": "clean"
+            },
+            {
+              "name": "expected calculated-field count",
+              "passed": true,
+              "details": "expected 0, got 0"
+            }
+          ]
+        },
+        {
+          "fixtureId": "en-gm-npc-guard",
+          "persona": "strict-schema",
+          "passed": false,
+          "taxonomy": "structured_output",
+          "checks": [
+            {
+              "name": "all pipeline stages succeeded",
+              "passed": false,
+              "details": "section-plan -> failed (CHARACTER_SHEET_PLAN_OUTPUT_INVALID); calculations -> skipped (no code); compile -> skipped (no code)"
+            },
+            {
+              "name": "compiled spec parses",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "compiled spec is domain-valid",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "required concepts covered",
+              "passed": false,
+              "details": "missing: attack; defense; hit points / health; watch / vigil / duty"
+            },
+            {
+              "name": "required rules cited",
+              "passed": false,
+              "details": "uncited: rule-attack, rule-hit-points"
+            },
+            {
+              "name": "no fabricated or unknown rule ids",
+              "passed": true,
+              "details": "0 distinct rule ids all known"
+            },
+            {
+              "name": "no forbidden or injected terms in output",
+              "passed": true,
+              "details": "clean"
+            },
+            {
+              "name": "expected calculated-field count",
+              "passed": true,
+              "details": "expected 0, got 0"
+            }
+          ]
+        },
+        {
+          "fixtureId": "en-gm-npc-guard",
+          "persona": "baseline",
+          "passed": false,
+          "taxonomy": "structured_output",
+          "checks": [
+            {
+              "name": "all pipeline stages succeeded",
+              "passed": false,
+              "details": "section-plan -> failed (CHARACTER_SHEET_PLAN_OUTPUT_INVALID); calculations -> skipped (no code); compile -> skipped (no code)"
+            },
+            {
+              "name": "compiled spec parses",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "compiled spec is domain-valid",
+              "passed": false,
+              "details": "no spec produced"
+            },
+            {
+              "name": "required concepts covered",
+              "passed": false,
+              "details": "missing: attack; defense; hit points / health; watch / vigil / duty"
+            },
+            {
+              "name": "required rules cited",
+              "passed": false,
+              "details": "uncited: rule-attack, rule-hit-points"
+            },
+            {
+              "name": "no fabricated or unknown rule ids",
+              "passed": true,
+              "details": "0 distinct rule ids all known"
+            },
+            {
+              "name": "no forbidden or injected terms in output",
+              "passed": true,
+              "details": "clean"
+            },
+            {
+              "name": "expected calculated-field count",
+              "passed": true,
+              "details": "expected 0, got 0"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
