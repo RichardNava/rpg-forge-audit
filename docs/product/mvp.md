@@ -1,8 +1,10 @@
 # Alcance del MVP — Proyecto OpenCode RPG
 
-**Estado:** Conceptual / Fase 0  
+**Estado:** Current high-level product/MVP scope document  
 **Versión:** 0.2  
 **Fecha:** 12 de agosto de 2026
+
+**Note:** Detailed active feature specifications override this document for feature-level behavior. For Character Sheets, see `docs/features/character-sheets.md` (ACTIVE).
 
 ## 1. Objetivo
 
@@ -118,11 +120,22 @@ Pergamino, sepia, trazos negros, tinta/lápiz/carboncillo y aspecto cartográfic
 
 ### Hoja de personaje
 
-- plantilla genérica;
-- campos sin completar;
-- aspecto imprimible;
-- PDF;
-- opcionalmente JPG.
+- creación manual;
+- carga de hoja existente (PDF/imagen) y extracción mediante IA;
+- edición completa de la información extraída;
+- añadir, eliminar, modificar y reorganizar elementos;
+- selección PC/NPC;
+- configurar opciones específicas del NPC, como nivel de amenaza;
+- añadir opcionalmente una imagen mediante: archivo, URL, generación mediante IA;
+- seleccionar un estilo visual;
+- confirmar la hoja;
+- generar posteriormente la CharacterSheetSpec y el PDF final.
+
+La hoja NO está limitada a un sistema concreto como D&D.
+
+Debe ser system-agnostic y estar definida por una estructura de datos genérica.
+
+La aplicación debe permitir trabajar tanto con hojas extraídas por IA como con hojas creadas manualmente.
 
 ### Fuera del MVP
 

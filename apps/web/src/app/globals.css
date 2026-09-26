@@ -158,9 +158,10 @@
   padding: clamp(0.75rem, 2vw, 2rem);
 }
 
-/* Character Workshop: tokens, workspace, components, then responsive rules.
-   Scope these styles so the workshop can use its scribe desk visual language
-   without leaking it into other standalone tools. */
+/* Character Workshop visual tokens. Scoped like the dice roller so the base
+   shell stays untouched and later routes can opt in to the forge/parchment
+   look. Values mirror the RPG visual language: wood, parchment, beige,
+   leather, aged metal, ink. */
 .character-workshop {
   --workshop-ink: #241d16;
   --workshop-ink-soft: #4a3f33;
@@ -308,44 +309,9 @@
 
 .character-workshop__layout {
   display: grid;
-  grid-template-columns: minmax(18rem, 0.85fr) minmax(0, 1.15fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   gap: clamp(0.75rem, 1.5vw, 1.5rem);
   align-items: start;
-}
-
-.character-workshop__preview-column {
-  display: grid;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.character-workshop__preview-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0 0.2rem;
-  color: #e8d9b8;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.character-workshop__preview-heading span:last-child {
-  color: #cbb586;
-  font-family: var(--font-geist-sans), sans-serif;
-  font-size: 0.68rem;
-  font-weight: 500;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-@media (min-width: 64.0625rem) {
-  .character-workshop__preview-column {
-    position: sticky;
-    top: 1rem;
-  }
 }
 
 @media (max-width: 64rem) {
@@ -476,26 +442,6 @@
 
 .character-workshop__field-grid > .character-workshop__draggable-field {
   grid-column: 1 / -1;
-}
-
-.character-workshop__draggable-field--insert-target {
-  position: relative;
-}
-
-.character-workshop__draggable-field--insert-target::before {
-  background: var(--workshop-metal);
-  border-radius: 999px;
-  content: "";
-  height: 0.18rem;
-  left: 0;
-  position: absolute;
-  right: 0;
-  top: -0.34rem;
-}
-
-.character-workshop__section-placement--active {
-  border-top: 0.2rem solid var(--workshop-metal);
-  border-radius: 0.2rem;
 }
 
 .character-workshop__field-grid > .character-workshop__draggable-field--number {
@@ -843,15 +789,14 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
   gap: 1rem;
-  width: min(100%, 58rem);
+  width: min(100%, 46rem);
 }
 
 .character-workshop__landing-choice {
   display: grid;
   gap: 0.5rem;
   text-align: left;
-  min-height: 13rem;
-  padding: 1.15rem;
+  padding: 1rem 1.1rem;
   border: 1px solid
     color-mix(in srgb, var(--workshop-metal-dark) 55%, transparent);
   border-radius: 0.75rem;
@@ -893,30 +838,6 @@
   font-size: 1.15rem;
 }
 
-.character-workshop__landing-choice-topline {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.character-workshop__landing-choice-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  flex: 0 0 auto;
-  border: 1px solid
-    color-mix(in srgb, var(--workshop-metal-dark) 55%, transparent);
-  border-radius: 0.45rem;
-  background: color-mix(in srgb, var(--workshop-metal) 18%, white);
-  color: var(--workshop-leather);
-}
-
-.character-workshop__landing-choice-icon svg {
-  width: 1.15rem;
-  height: 1.15rem;
-}
-
 .character-workshop__badge {
   font-family: var(--font-geist-sans), sans-serif;
   font-size: 0.7rem;
@@ -935,24 +856,11 @@
 }
 
 .character-workshop__landing-choice-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
   font-size: 0.85rem;
   font-weight: 700;
   color: color-mix(in srgb, var(--workshop-ink) 85%, black);
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.character-workshop__landing-choice-cta svg,
-.character-workshop__btn svg,
-.character-workshop__drag-handle svg,
-.character-workshop__field-settings summary svg,
-.character-workshop__section-settings summary svg {
-  width: 1rem;
-  height: 1rem;
-  flex: 0 0 auto;
 }
 
 .character-workshop__toolbar-title {
@@ -1104,7 +1012,6 @@
   color: var(--workshop-ink-soft);
   font-size: 0.85rem;
   font-weight: 700;
-  gap: 0.35rem;
 }
 .character-workshop__field-settings summary:focus-visible,
 .character-workshop__section-settings summary:focus-visible {
@@ -1119,11 +1026,6 @@
 }
 .character-workshop__section-settings > div {
   min-width: min(100%, 17rem);
-  padding: 0.75rem;
-  border: 1px solid
-    color-mix(in srgb, var(--workshop-parchment-edge) 45%, transparent);
-  border-radius: 0.45rem;
-  background: rgb(255 252 242 / 42%);
 }
 .character-workshop__section-heading {
   align-items: flex-start;
@@ -1131,42 +1033,6 @@
 .character-workshop__section-settings {
   border-top: 0;
   padding-top: 0;
-}
-
-.character-workshop__field-settings-content {
-  padding: 0.75rem;
-  border: 1px solid
-    color-mix(in srgb, var(--workshop-parchment-edge) 45%, transparent);
-  border-radius: 0.45rem;
-  background: rgb(255 252 242 / 42%);
-}
-
-.character-workshop__settings-actions {
-  width: 100%;
-}
-
-.character-workshop__settings-actions .character-workshop__btn--danger {
-  margin-inline-start: auto;
-}
-
-.character-workshop__drag-handle {
-  display: inline-grid;
-  place-items: center;
-  width: 2.5rem;
-  min-height: 2.5rem;
-  border: 1px solid transparent;
-  border-radius: 0.4rem;
-}
-
-.character-workshop__drag-handle:hover,
-.character-workshop__drag-handle:focus-visible {
-  border-color: color-mix(
-    in srgb,
-    var(--workshop-parchment-edge) 65%,
-    transparent
-  );
-  background: rgb(255 252 242 / 52%);
-  color: var(--workshop-ink);
 }
 
 .character-workshop__btn {
@@ -1223,14 +1089,6 @@
   }
   .character-workshop__form-row {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .character-workshop__preview-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-  .character-workshop__settings-actions .character-workshop__btn {
-    flex: 1 1 8rem;
   }
 }
 
