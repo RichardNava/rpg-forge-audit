@@ -35,8 +35,11 @@ describe("UploadSheetDialog", () => {
       target: { files: [pdf] },
     });
 
+    fireEvent.click(
+      within(dialog).getByLabelText("This PDF has more than 3 pages"),
+    );
     fireEvent.change(
-      within(dialog).getByLabelText("Page containing the character sheet"),
+      within(dialog).getByLabelText("Start extracting at page"),
       { target: { value: "2" } },
     );
     fireEvent.click(

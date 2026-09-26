@@ -6,7 +6,6 @@ import {
   validateSheetUploadFile,
 } from "../lib/sheet-upload-validation";
 import type { SheetDocumentFileDescriptor } from "../extraction/extraction-service";
-import { getPdfPageCount } from "../extraction/pdf-page-images";
 
 interface SheetUploadDescriptor extends SheetDocumentFileDescriptor {
   sheetStartPage?: number;
@@ -36,34 +35,26 @@ export function UploadSheetDialog({
 }: UploadSheetDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [pdfPageCount, setPdfPageCount] = useState<number | null>(null);
+  const [hasMoreThanThreePages, setHasMoreThanThreePages] = useState(false);
   const [sheetStartPage, setSheetStartPage] = useState("1");
 
   if (!open) {
     return null;
   }
 
-  async function handleSelect(next: File | null) {
+  function handleSelect(next: File | null) {
     const result = validateSheetUploadFile(next);
     if (!result.valid) {
       setFile(null);
       setValidationError(result.message);
-      setPdfPageCount(null);
+      setHasMoreThanThreePages(false);
       setSheetStartPage("1");
       return;
     }
-    if (next === null) return;
     setFile(next);
     setValidationError(null);
-    setPdfPageCount(null);
+    setHasMoreThanThreePages(false);
     setSheetStartPage("1");
-    if (next.type === "application/pdf") {
-      try {
-        setPdfPageCount(await getPdfPageCount(next));
-      } catch {
-        setValidationError("This PDF could not be read in the browser.");
-      }
-    }
   }
 
   async function handleExtract() {
@@ -72,12 +63,10 @@ export function UploadSheetDialog({
     }
     const parsedStartPage = Number(sheetStartPage);
     if (
-      file.type === "application/pdf" &&
-      (!Number.isSafeInteger(parsedStartPage) ||
-        parsedStartPage < 1 ||
-        (pdfPageCount !== null && parsedStartPage > pdfPageCount))
+      hasMoreThanThreePages &&
+      (!Number.isSafeInteger(parsedStartPage) || parsedStartPage < 1)
     ) {
-      setValidationError("Enter a valid page number for this PDF.");
+      setValidationError("Enter a whole page number of 1 or greater.");
       return;
     }
     const descriptor: SheetUploadDescriptor = {
@@ -85,9 +74,7 @@ export function UploadSheetDialog({
       mimeType: file.type,
       size: file.size,
       blob: file,
-      ...(file.type === "application/pdf"
-        ? { sheetStartPage: parsedStartPage }
-        : {}),
+      ...(hasMoreThanThreePages ? { sheetStartPage: parsedStartPage } : {}),
     };
     const rejection = await onSubmit(descriptor);
     if (rejection !== null) {
@@ -146,29 +133,41 @@ export function UploadSheetDialog({
             </div>
             {file.type === "application/pdf" && (
               <div className="character-workshop__page-selection">
-                <label className="character-workshop__page-number">
-                  Page containing the character sheet
+                <label className="character-workshop__page-option">
                   <input
-                    type="number"
-                    min="1"
-                    max={pdfPageCount ?? undefined}
-                    step="1"
-                    inputMode="numeric"
-                    value={sheetStartPage}
+                    type="checkbox"
+                    checked={hasMoreThanThreePages}
                     disabled={busy}
-                    aria-describedby={
-                      validationError === null ? undefined : "upload-error"
+                    onChange={(event) =>
+                      setHasMoreThanThreePages(event.currentTarget.checked)
                     }
-                    onChange={(event) => {
-                      setSheetStartPage(event.currentTarget.value);
-                      setValidationError(null);
-                    }}
                   />
+                  This PDF has more than 3 pages
                 </label>
+                {hasMoreThanThreePages && (
+                  <label className="character-workshop__page-number">
+                    Start extracting at page
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      inputMode="numeric"
+                      value={sheetStartPage}
+                      disabled={busy}
+                      aria-describedby={
+                        validationError === null ? undefined : "upload-error"
+                      }
+                      onChange={(event) => {
+                        setSheetStartPage(event.currentTarget.value);
+                        setValidationError(null);
+                      }}
+                    />
+                  </label>
+                )}
                 <p className="character-workshop__page-selection-help">
-                  {pdfPageCount === null
-                    ? "Only the selected page will be analysed."
-                    : `This PDF has ${pdfPageCount} pages. Only the selected page will be analysed.`}
+                  We cannot determine PDF page counts in this browser. Select
+                  the first page of the character sheet if this document has
+                  additional pages.
                 </p>
               </div>
             )}

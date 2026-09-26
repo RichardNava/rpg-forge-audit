@@ -1,21 +1,15 @@
 // @vitest-environment jsdom
 
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { initialDraftVersion } from "@repo/character-sheet-draft";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { WorkshopSidebar } from "./WorkshopSidebar";
+import { applyWorkshopDrop, WorkshopSidebar } from "./WorkshopSidebar";
 
 describe("WorkshopSidebar", () => {
   afterEach(cleanup);
   it("groups nested fields and renders bounded numeric controls compactly", () => {
     const draft = initialDraftVersion({
-      schemaVersion: "1",
+      schemaVersion: "2",
       draftId: "draft.sidebar",
       sessionId: "session.sidebar",
       mode: "pc",
@@ -33,19 +27,15 @@ describe("WorkshopSidebar", () => {
         },
       ],
       sections: [
-        { key: "attributes", title: "Attributes", fieldKeys: [] },
-        {
-          key: "physical",
-          title: "Physical",
-          parentKey: "attributes",
-          fieldKeys: ["strength"],
-        },
-        {
-          key: "body",
-          title: "Body",
-          parentKey: "physical",
-          fieldKeys: [],
-        },
+        { key: "attributes", title: "Attributes" },
+        { key: "physical", title: "Physical" },
+        { key: "body", title: "Body" },
+      ],
+      structure: [
+        { kind: "section", key: "attributes", parentKey: null },
+        { kind: "section", key: "physical", parentKey: "attributes" },
+        { kind: "section", key: "body", parentKey: "physical" },
+        { kind: "field", key: "strength", parentKey: "body" },
       ],
       values: {},
       source: { sourceSheetId: null, sourceRunId: null },
@@ -59,13 +49,13 @@ describe("WorkshopSidebar", () => {
           onSetValue: vi.fn(),
           onClearValue: vi.fn(),
           onRemoveField: vi.fn(),
-          onUpdateField: vi.fn(),
+          onSetFieldLabel: vi.fn(),
+          onSetFieldType: vi.fn(),
           onAddSection: vi.fn(),
           onRenameSection: vi.fn(),
-          onPlaceNode: vi.fn(),
-          onRemoveSection: vi.fn(),
+          onMoveField: vi.fn(),
+          onReparentSection: vi.fn(),
           onAddField: vi.fn(),
-          onOpenAddSection: vi.fn(),
         }}
       />,
     );
@@ -81,9 +71,50 @@ describe("WorkshopSidebar", () => {
     ).toBeTruthy();
   });
 
+  it("maps drag destinations to the canonical field and section mutations", () => {
+    const callbacks = { onMoveField: vi.fn(), onReparentSection: vi.fn() };
+    applyWorkshopDrop(
+      { kind: "field", key: "strength" },
+      { kind: "section", key: "physical" },
+      callbacks,
+    );
+    applyWorkshopDrop(
+      { kind: "field", key: "strength" },
+      { kind: "section", key: null },
+      callbacks,
+    );
+    applyWorkshopDrop(
+      { kind: "section", key: "physical" },
+      { kind: "section", key: "attributes" },
+      callbacks,
+    );
+    applyWorkshopDrop(
+      { kind: "section", key: "physical" },
+      { kind: "section", key: null },
+      callbacks,
+    );
+
+    expect(callbacks.onMoveField).toHaveBeenNthCalledWith(
+      1,
+      "strength",
+      "physical",
+    );
+    expect(callbacks.onMoveField).toHaveBeenNthCalledWith(2, "strength", null);
+    expect(callbacks.onReparentSection).toHaveBeenNthCalledWith(
+      1,
+      "physical",
+      "attributes",
+    );
+    expect(callbacks.onReparentSection).toHaveBeenNthCalledWith(
+      2,
+      "physical",
+      null,
+    );
+  });
+
   it("offers keyboard-accessible structural controls through typed callbacks", () => {
     const draft = initialDraftVersion({
-      schemaVersion: "1",
+      schemaVersion: "2",
       draftId: "draft.structure",
       sessionId: "session.structure",
       mode: "pc",
@@ -91,8 +122,13 @@ describe("WorkshopSidebar", () => {
       rulesContextId: null,
       fields: [{ key: "name", label: "Name", type: "text", locked: false }],
       sections: [
-        { key: "details", title: "Details", fieldKeys: ["name"] },
-        { key: "notes", title: "Notes", fieldKeys: [] },
+        { key: "details", title: "Details" },
+        { key: "notes", title: "Notes" },
+      ],
+      structure: [
+        { kind: "section", key: "details", parentKey: null },
+        { kind: "section", key: "notes", parentKey: null },
+        { kind: "field", key: "name", parentKey: "details" },
       ],
       values: {},
       source: { sourceSheetId: null, sourceRunId: null },
@@ -102,13 +138,13 @@ describe("WorkshopSidebar", () => {
       onSetValue: vi.fn(),
       onClearValue: vi.fn(),
       onRemoveField: vi.fn(),
-      onUpdateField: vi.fn(),
+      onSetFieldLabel: vi.fn(),
+      onSetFieldType: vi.fn(),
       onAddSection: vi.fn(),
       onRenameSection: vi.fn(),
-      onPlaceNode: vi.fn(),
-      onRemoveSection: vi.fn(),
+      onMoveField: vi.fn(),
+      onReparentSection: vi.fn(),
       onAddField: vi.fn(),
-      onOpenAddSection: vi.fn(),
     };
 
     render(
@@ -132,20 +168,17 @@ describe("WorkshopSidebar", () => {
       target: { value: "Warrior\nScholar" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Apply settings" }));
-    expect(callbacks.onUpdateField).toHaveBeenCalledWith({
+    expect(callbacks.onSetFieldType).toHaveBeenCalledWith({
       key: "name",
-      label: "Hero name",
       type: "choice",
       options: ["Warrior", "Scholar"],
     });
+    expect(callbacks.onSetFieldLabel).toHaveBeenCalledWith("name", "Hero name");
 
     fireEvent.change(screen.getByLabelText("Assign Name to section"), {
       target: { value: "notes" },
     });
-    expect(callbacks.onPlaceNode).toHaveBeenCalledWith(
-      { kind: "field", key: "name" },
-      { parent: { kind: "section", key: "notes" }, before: null },
-    );
+    expect(callbacks.onMoveField).toHaveBeenCalledWith("name", "notes");
 
     fireEvent.click(
       screen.getAllByText("Section settings", { selector: "summary" })[0]!,
@@ -161,46 +194,9 @@ describe("WorkshopSidebar", () => {
     fireEvent.change(screen.getByLabelText("Parent section for Notes"), {
       target: { value: "details" },
     });
-    expect(callbacks.onPlaceNode).toHaveBeenCalledWith(
-      { kind: "section", key: "notes" },
-      { parent: { kind: "section", key: "details" }, before: null },
+    expect(callbacks.onReparentSection).toHaveBeenCalledWith(
+      "notes",
+      "details",
     );
-  });
-
-  it("closes field settings only when async callbacks confirm success", async () => {
-    const draft = initialDraftVersion({
-      schemaVersion: "1",
-      draftId: "draft.settings",
-      sessionId: "session.settings",
-      mode: "pc",
-      characterName: null,
-      rulesContextId: null,
-      fields: [{ key: "name", label: "Name", type: "text", locked: false }],
-      sections: [],
-      values: {},
-      source: { sourceSheetId: null, sourceRunId: null },
-      confirmed: false,
-    });
-    render(
-      <WorkshopSidebar
-        draft={draft}
-        disabled={false}
-        callbacks={{
-          onSetValue: vi.fn(),
-          onClearValue: vi.fn(),
-          onRemoveField: vi.fn(),
-          onUpdateField: vi.fn().mockResolvedValue(true),
-          onAddSection: vi.fn(),
-          onRenameSection: vi.fn(),
-          onPlaceNode: vi.fn().mockResolvedValue(true),
-          onRemoveSection: vi.fn(),
-          onAddField: vi.fn(),
-          onOpenAddSection: vi.fn(),
-        }}
-      />,
-    );
-
-    // Just verify the component renders without errors
-    expect(screen.getByText("Name")).toBeTruthy();
   });
 });

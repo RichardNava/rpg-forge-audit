@@ -80,7 +80,7 @@ function makeValidDraft(
   version: number,
 ): CharacterSheetDraft {
   return {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId,
     sessionId,
     baseVersion: 1,
@@ -95,6 +95,10 @@ function makeValidDraft(
         type: "text",
         locked: false,
       },
+    ],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
     ],
     values: { character_name: "Aria Stone" },
     source: { sourceSheetId: "sheet.0001", sourceRunId: null },

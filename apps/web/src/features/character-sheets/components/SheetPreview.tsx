@@ -3,6 +3,7 @@ import {
   projectDraftToSpec,
   type CharacterSheetDraft,
 } from "@repo/character-sheet-draft";
+import { getChildren, getParent, walkStructure } from "@repo/character-sheet-draft";
 import { previewValue } from "./FieldEditor";
 
 interface SheetPreviewProps {
@@ -50,28 +51,30 @@ export function SheetPreview({ draft }: SheetPreviewProps) {
 }
 
 function PreviewGroups({ draft }: { draft: CharacterSheetDraft }) {
-  const sections = draft.sections ?? [];
-  if (sections.length === 0)
+  const rootPlacements = draft.structure.filter((p) => p.parentKey === null);
+  
+  if (rootPlacements.length === 0) {
     return draft.fields.map((field) => (
       <PreviewField key={field.key} draft={draft} fieldKey={field.key} />
     ));
-  const assigned = new Set(sections.flatMap((section) => section.fieldKeys));
+  }
+
   return (
     <>
-      {sections
-        .filter((section) => section.parentKey === undefined)
-        .map((section) => (
+      {rootPlacements
+        .filter((p) => p.kind === "section")
+        .map((sectionPlacement) => (
           <PreviewSection
-            key={section.key}
-            sectionKey={section.key}
+            key={sectionPlacement.key}
+            sectionKey={sectionPlacement.key}
             draft={draft}
             depth={0}
           />
         ))}
-      {draft.fields
-        .filter((field) => !assigned.has(field.key))
-        .map((field) => (
-          <PreviewField key={field.key} draft={draft} fieldKey={field.key} />
+      {rootPlacements
+        .filter((p) => p.kind === "field")
+        .map((fieldPlacement) => (
+          <PreviewField key={fieldPlacement.key} draft={draft} fieldKey={fieldPlacement.key} />
         ))}
     </>
   );
@@ -86,9 +89,11 @@ function PreviewSection({
   draft: CharacterSheetDraft;
   depth: number;
 }) {
-  const sections = draft.sections ?? [];
-  const section = sections.find((entry) => entry.key === sectionKey);
+  const section = draft.sections?.find((entry) => entry.key === sectionKey);
   if (section === undefined) return null;
+  
+  const children = getChildren(draft, sectionKey);
+  
   return (
     <section
       className="character-workshop__preview-section"
@@ -102,16 +107,18 @@ function PreviewSection({
         {section.title}
       </h3>
       <div className="character-workshop__preview-section-fields">
-        {section.fieldKeys.map((key) => (
-          <PreviewField key={key} draft={draft} fieldKey={key} />
-        ))}
+        {children
+          .filter((p) => p.kind === "field")
+          .map((fieldPlacement) => (
+            <PreviewField key={fieldPlacement.key} draft={draft} fieldKey={fieldPlacement.key} />
+          ))}
       </div>
-      {sections
-        .filter((child) => child.parentKey === section.key)
-        .map((child) => (
+      {children
+        .filter((p) => p.kind === "section")
+        .map((childPlacement) => (
           <PreviewSection
-            key={child.key}
-            sectionKey={child.key}
+            key={childPlacement.key}
+            sectionKey={childPlacement.key}
             draft={draft}
             depth={depth + 1}
           />

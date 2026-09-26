@@ -11,7 +11,7 @@ function makeDraft(
   overrides: Partial<CharacterSheetDraft> = {},
 ): CharacterSheetDraft {
   return {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: DRAFT_ID,
     sessionId: SESSION_ID,
     baseVersion: 1,
@@ -35,6 +35,12 @@ function makeDraft(
         locked: true,
       },
       { key: "veteran", label: "Veteran", type: "checkbox", locked: false },
+    ],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+      { kind: "field", key: "strength", parentKey: null },
+      { kind: "field", key: "veteran", parentKey: null },
     ],
     values: { character_name: "Aria Stone", strength: 12 },
     source: { sourceSheetId: "sheet.0001", sourceRunId: null },
@@ -91,7 +97,6 @@ function makeApiClient(
       rerolledKeys: ["strength"],
     })),
     confirmDraft: vi.fn(async () => makeDraft({ version: 4, confirmed: true })),
-    undoDraft: vi.fn(async () => makeDraft({ version: 4 })),
     ...overrides,
   };
 }

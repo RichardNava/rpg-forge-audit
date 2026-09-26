@@ -15,7 +15,7 @@ function makeDraft(
   overrides: Partial<CharacterSheetDraft> = {},
 ): CharacterSheetDraft {
   return {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: DRAFT_ID,
     sessionId: SESSION_ID,
     baseVersion: 1,
@@ -38,6 +38,11 @@ function makeDraft(
         max: 20,
         locked: true,
       },
+    ],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+      { kind: "field", key: "strength", parentKey: null },
     ],
     values: { character_name: "Aria Stone", strength: 12 },
     source: { sourceSheetId: "sheet.0001", sourceRunId: null },

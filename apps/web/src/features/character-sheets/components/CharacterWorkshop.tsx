@@ -138,7 +138,6 @@ export function CharacterWorkshop() {
           file,
         });
         await store.createDraft(draft);
-        setModal("none");
         setScreen("editing");
         return null;
       } catch (error) {
@@ -164,26 +163,22 @@ export function CharacterWorkshop() {
   );
 
   const applyMutation = useCallback(
-    async (mutation: DraftMutation): Promise<boolean> => {
+    async (mutation: DraftMutation) => {
       const outcome = await store.applyMutation(mutation);
       if (outcome.kind === "rejected") {
         setTransientError(outcome.message);
-        return false;
       } else if (outcome.kind === "error") {
         setTransientError(outcome.error.message);
-        return false;
       } else if (outcome.kind === "ok") {
         setTransientError(null);
-        return true;
       }
-      return false;
     },
     [store],
   );
 
   const handleRename = useCallback(
-    async (title: string) => {
-      return applyMutation(
+    (title: string) => {
+      void applyMutation(
         title === ""
           ? { op: "clear_value", key: "character_name" }
           : { op: "set_value", key: "character_name", value: title },
@@ -193,93 +188,65 @@ export function CharacterWorkshop() {
   );
 
   const handleSetValue = useCallback(
-    async (key: string, value: DraftValue) => {
-      return applyMutation({ op: "set_value", key, value });
+    (key: string, value: DraftValue) => {
+      void applyMutation({ op: "set_value", key, value });
     },
     [applyMutation],
   );
 
   const handleClearValue = useCallback(
-    async (key: string) => {
-      return applyMutation({ op: "clear_value", key });
+    (key: string) => {
+      void applyMutation({ op: "clear_value", key });
     },
     [applyMutation],
   );
 
   const handleRemoveField = useCallback(
-    async (key: string) => {
-      return applyMutation({ op: "remove_field", key });
+    (key: string) => {
+      void applyMutation({ op: "remove_field", key });
     },
     [applyMutation],
   );
 
-  const handleUpdateField = useCallback(
-    async (
-      field: Extract<DraftMutation, { op: "update_field" }>["field"],
-    ) => {
-      return applyMutation({ op: "update_field", field });
+  const handleSetFieldLabel = useCallback(
+    (key: string, label: string) => {
+      void applyMutation({ op: "set_field_label", key, label });
+    },
+    [applyMutation],
+  );
+
+  const handleSetFieldType = useCallback(
+    (field: Extract<DraftMutation, { op: "set_field_type" }>["field"]) => {
+      void applyMutation({ op: "set_field_type", field });
     },
     [applyMutation],
   );
 
   const handleAddSection = useCallback(
-    async (
-      section: Extract<DraftMutation, { op: "add_section" }>["section"],
-    ) => {
-      return applyMutation({ op: "add_section", section });
+    (section: Extract<DraftMutation, { op: "add_section" }>["section"]) => {
+      void applyMutation({ op: "add_section", section });
     },
     [applyMutation],
   );
 
   const handleRenameSection = useCallback(
-    async (key: string, title: string) => {
-      return applyMutation({ op: "rename_section", key, title });
+    (key: string, title: string) => {
+      void applyMutation({ op: "rename_section", key, title });
     },
     [applyMutation],
   );
 
   const handleMoveField = useCallback(
-    async (key: string, sectionKey: string | null) => {
-      return applyMutation({ op: "move_field", key, sectionKey });
+    (key: string, parentKey: string | null) => {
+      void applyMutation({ op: "move_field", key, parentKey });
     },
-    [applyMutation],
-  );
-
-  const handlePlaceField = useCallback(
-    async (
-      key: string,
-      sectionKey: string | null,
-      beforeFieldKey: string | null,
-    ) => applyMutation({ op: "place_field", key, sectionKey, beforeFieldKey }),
     [applyMutation],
   );
 
   const handleReparentSection = useCallback(
-    async (key: string, parentKey: string | null) => {
-      return applyMutation({ op: "reparent_section", key, parentKey });
+    (key: string, parentKey: string | null) => {
+      void applyMutation({ op: "reparent_section", key, parentKey });
     },
-    [applyMutation],
-  );
-
-  const handlePlaceSection = useCallback(
-    async (key: string, parentKey: string | null, beforeSectionKey: string | null) =>
-      applyMutation({ op: "place_section", key, parentKey, beforeSectionKey }),
-    [applyMutation],
-  );
-
-  const handlePlaceNode = useCallback(
-    async (
-      node: { kind: "field" | "section"; key: string },
-      destination: {
-        parent: { kind: "root" } | { kind: "section"; key: string };
-        before: { kind: "field" | "section"; key: string } | null;
-      },
-    ) => applyMutation({ op: "place_node", node, destination }),
-    [applyMutation],
-  );
-
-  const handleRemoveSection = useCallback(
-    async (key: string) => applyMutation({ op: "remove_section", key, strategy: "reject_if_nonempty" }),
     [applyMutation],
   );
 
@@ -397,34 +364,23 @@ export function CharacterWorkshop() {
               {transientError}
             </p>
           )}
-          <div className="character-workshop__layout">
-            <aside
-              className="character-workshop__preview-column"
-              aria-label="Live preview"
-            >
-              <div className="character-workshop__preview-heading">
-                <span>Live preview</span>
-                <span>Updates as you write</span>
-              </div>
-              <SheetPreview draft={draft} />
-            </aside>
-            <WorkshopSidebar
-              draft={draft}
-              callbacks={{
-                onSetValue: handleSetValue,
-                onClearValue: handleClearValue,
-                onRemoveField: handleRemoveField,
-                onUpdateField: handleUpdateField,
-                onAddSection: handleAddSection,
-                onRenameSection: handleRenameSection,
-                onPlaceNode: handlePlaceNode,
-                onRemoveSection: handleRemoveSection,
-                onAddField: () => setModal("add-field"),
-                onOpenAddSection: () => setModal("add-section"),
-              }}
-              disabled={draft.confirmed}
-            />
-          </div>
+          <WorkshopSidebar
+            draft={draft}
+            callbacks={{
+              onSetValue: handleSetValue,
+              onClearValue: handleClearValue,
+              onRemoveField: handleRemoveField,
+              onSetFieldLabel: handleSetFieldLabel,
+              onSetFieldType: handleSetFieldType,
+              onAddSection: handleAddSection,
+              onRenameSection: handleRenameSection,
+              onMoveField: handleMoveField,
+              onReparentSection: handleReparentSection,
+              onAddField: () => setModal("add-field"),
+              onOpenAddSection: () => setModal("add-section"),
+            }}
+            disabled={draft.confirmed}
+          />
         </>
       )}
 

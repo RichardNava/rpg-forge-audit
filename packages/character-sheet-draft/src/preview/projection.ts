@@ -7,11 +7,12 @@ import {
 import type {
   CharacterSheetDraft,
   DraftField,
+  DraftPlacement,
   DraftValue,
 } from "../draft-schema";
 import { MAX_DRAFT_TEXT_VALUE_CHARS } from "../draft-schema";
 import { draftError } from "../errors";
-import { surfaceKeys } from "../guided-edit";
+import { surfaceKeys, walkStructure } from "../guided-edit";
 
 const FIELD_PLACEMENT = {
   order: 0,
@@ -50,43 +51,9 @@ export function projectDraftToSpec(
     }
   }
 
-  const draftSections = draft.sections ?? [];
-  const assignedKeys = new Set(
-    draftSections.flatMap((section) => section.fieldKeys),
-  );
-  const projectedSections = [
-    ...draftSections
-      .filter((section) => section.fieldKeys.length > 0)
-      .map((section, index) => ({
-        id: `draft.section.${section.key}`,
-        title: sectionTitle(draft, section.key),
-        layout: {
-          mode: "flow" as const,
-          columns: 1,
-          order: index,
-          emphasis: null,
-        },
-        fieldIds: section.fieldKeys,
-      })),
-    ...(fieldIds.filter((key) => !assignedKeys.has(key)).length > 0
-      ? [
-          {
-            id:
-              draftSections.length === 0
-                ? "draft.section"
-                : "draft.section.ungrouped",
-            title: draft.mode === "npc" ? "NPC" : "Character",
-            layout: {
-              mode: "flow" as const,
-              columns: 1,
-              order: draftSections.length,
-              emphasis: null,
-            },
-            fieldIds: fieldIds.filter((key) => !assignedKeys.has(key)),
-          },
-        ]
-      : []),
-  ];
+  // Build projected sections from the structure array
+  const projectedSections = buildProjectedSections(draft);
+  
   const spec: CharacterSheetSpec = {
     schemaVersion: "1",
     mode: draft.mode === "pc" ? "player" : "npc",
@@ -123,6 +90,90 @@ export function projectDraftToSpec(
   };
 
   return validateProjectedSpec(spec);
+}
+
+function buildProjectedSections(draft: CharacterSheetDraft): CharacterSheetSpec["sections"] {
+  const sections: CharacterSheetSpec["sections"] = [];
+  let sectionOrder = 0;
+
+  // Walk the structure in preorder to build sections
+  for (const { placement, depth } of walkStructure(draft)) {
+    if (placement.kind === "section") {
+      const section = draft.sections?.find((s) => s.key === placement.key);
+      if (!section) continue;
+      
+      // Collect all field keys in this section's subtree
+      const fieldIds = collectFieldIdsInSubtree(draft, placement.key);
+      if (fieldIds.length === 0) continue;
+      
+      const title = depth === 0 
+        ? section.title 
+        : buildSectionTitle(draft, placement.key);
+      
+      sections.push({
+        id: `draft.section.${section.key}`,
+        title,
+        layout: {
+          mode: "flow" as const,
+          columns: 1,
+          order: sectionOrder++,
+          emphasis: null,
+        },
+        fieldIds,
+      });
+    }
+  }
+
+  // Handle unassigned root fields (fields with parentKey: null that aren't in any section)
+  const rootFieldIds = draft.structure
+    .filter((p) => p.kind === "field" && p.parentKey === null)
+    .map((p) => p.key);
+  
+  if (rootFieldIds.length > 0) {
+    sections.push({
+      id: sections.length === 0 ? "draft.section" : "draft.section.ungrouped",
+      title: draft.mode === "npc" ? "NPC" : "Character",
+      layout: {
+        mode: "flow" as const,
+        columns: 1,
+        order: sectionOrder,
+        emphasis: null,
+      },
+      fieldIds: rootFieldIds,
+    });
+  }
+
+  return sections;
+}
+
+function collectFieldIdsInSubtree(draft: CharacterSheetDraft, sectionKey: string): string[] {
+  const result: string[] = [];
+  const children = draft.structure.filter((p) => p.parentKey === sectionKey);
+  
+  for (const child of children) {
+    if (child.kind === "field") {
+      result.push(child.key);
+    } else {
+      result.push(...collectFieldIdsInSubtree(draft, child.key));
+    }
+  }
+  
+  return result;
+}
+
+function buildSectionTitle(draft: CharacterSheetDraft, sectionKey: string): string {
+  const section = draft.sections?.find((s) => s.key === sectionKey);
+  if (!section) return sectionKey;
+  
+  const parentPlacement = draft.structure.find(
+    (p) => p.kind === "section" && p.key === sectionKey
+  );
+  const parentKey = parentPlacement?.parentKey;
+  
+  if (!parentKey) return section.title;
+  
+  const parentTitle = buildSectionTitle(draft, parentKey);
+  return `${parentTitle} · ${section.title}`;
 }
 
 function draftFieldToSpecField(field: DraftField): CharacterSheetField {
@@ -185,14 +236,6 @@ function draftFieldToSpecField(field: DraftField): CharacterSheetField {
         maxItems: 100,
       };
   }
-}
-
-function sectionTitle(draft: CharacterSheetDraft, key: string): string {
-  const section = (draft.sections ?? []).find((entry) => entry.key === key);
-  if (section === undefined) return key;
-  return section.parentKey === undefined
-    ? section.title
-    : `${sectionTitle(draft, section.parentKey)} · ${section.title}`;
 }
 
 function validateProjectedSpec(spec: CharacterSheetSpec): CharacterSheetSpec {

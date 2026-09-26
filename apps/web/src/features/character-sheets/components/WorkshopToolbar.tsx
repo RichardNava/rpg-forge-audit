@@ -1,5 +1,4 @@
 import type { CharacterSheetDraft } from "@repo/character-sheet-draft";
-import { Check, FilePlus2, RotateCcw } from "lucide-react";
 import type { SheetDraftSaveStatus } from "../state/sheet-store-types";
 
 const SAVE_STATUS_LABEL: Record<SheetDraftSaveStatus, string> = {
@@ -77,8 +76,7 @@ export function WorkshopToolbar({
               onClick={onAddField}
               disabled={busy}
             >
-              <FilePlus2 aria-hidden="true" />
-              <span>Add field</span>
+              Add field
             </button>
             <button
               type="button"
@@ -86,8 +84,7 @@ export function WorkshopToolbar({
               onClick={onRestart}
               disabled={busy}
             >
-              <RotateCcw aria-hidden="true" />
-              <span>Start over</span>
+              Start over
             </button>
             <button
               type="button"
@@ -95,8 +92,7 @@ export function WorkshopToolbar({
               onClick={onConfirm}
               disabled={busy}
             >
-              <Check aria-hidden="true" />
-              <span>Confirm sheet</span>
+              Confirm sheet
             </button>
           </>
         )}

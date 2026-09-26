@@ -8,7 +8,7 @@ import { SheetPreview } from "./SheetPreview";
 describe("SheetPreview", () => {
   it("renders nested section titles before their extracted fields", () => {
     const draft = initialDraftVersion({
-      schemaVersion: "1",
+      schemaVersion: "2",
       draftId: "draft.preview",
       sessionId: "session.preview",
       mode: "pc",
@@ -32,14 +32,16 @@ describe("SheetPreview", () => {
         },
       ],
       sections: [
-        { key: "attributes", title: "Attributes", fieldKeys: [] },
-        {
-          key: "physical",
-          title: "Physical",
-          parentKey: "attributes",
-          fieldKeys: ["strength"],
-        },
-        { key: "details", title: "Details", fieldKeys: ["backgrounds"] },
+        { key: "attributes", title: "Attributes" },
+        { key: "physical", title: "Physical" },
+        { key: "details", title: "Details" },
+      ],
+      structure: [
+        { kind: "section", key: "attributes", parentKey: null },
+        { kind: "section", key: "physical", parentKey: "attributes" },
+        { kind: "field", key: "strength", parentKey: "physical" },
+        { kind: "section", key: "details", parentKey: null },
+        { kind: "field", key: "backgrounds", parentKey: "details" },
       ],
       values: { backgrounds: ["First entry", "Second entry"] },
       source: { sourceSheetId: null, sourceRunId: null },

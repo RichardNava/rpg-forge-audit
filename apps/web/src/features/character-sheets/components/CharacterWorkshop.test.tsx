@@ -38,22 +38,23 @@ describe("CharacterWorkshop", () => {
     // Choose manual creation.
     fireEvent.click(screen.getByRole("button", { name: /Create manually/i }));
 
-// Workshop appears with the blank draft's single field and a title input.
+    // Workshop appears with the blank draft's single field and a title input.
     await waitFor(() => {
       expect(screen.getByLabelText("Sheet title")).toBeTruthy();
-      expect(screen.getByText("Character name")).toBeTruthy();
+      expect(
+        screen.getByText("Character name", {
+          selector: ".character-workshop__field-label",
+        }),
+      ).toBeTruthy();
     });
 
-    // Renaming the sheet keeps the title input and live preview in sync.
+    // Renaming the sheet keeps the title input in sync without a persistent preview.
     const titleInput = screen.getByLabelText("Sheet title");
     fireEvent.change(titleInput, { target: { value: "Mara Thorn" } });
     await waitFor(() => {
       expect(
         (screen.getByLabelText("Sheet title") as HTMLInputElement).value,
       ).toBe("Mara Thorn");
-      expect(screen.getByLabelText("Sheet preview").textContent).toContain(
-        "Mara Thorn",
-      );
     });
 
     // Add a number field through the dialog.

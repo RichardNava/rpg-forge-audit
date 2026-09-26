@@ -27,7 +27,6 @@ import { errorResponse, jsonResponse } from "./transport/errors.js";
 import {
   CreateSessionRequestSchema,
   SheetDraftRerollRequestSchema,
-  SheetDraftUndoRequestSchema,
   SheetSessionCreateResponseSchema,
   SheetSessionViewSchema,
   type SheetSessionView,
@@ -45,16 +44,20 @@ const SHEET_DRAFT_REROLL_PATH_PATTERN =
   /^\/v1\/character-sheets\/sessions\/([^/]+)\/drafts\/([^/]+)\/reroll$/;
 const SHEET_DRAFT_CONFIRM_PATH_PATTERN =
   /^\/v1\/character-sheets\/sessions\/([^/]+)\/drafts\/([^/]+)\/confirm$/;
-const SHEET_DRAFT_UNDO_PATH_PATTERN =
-  /^\/v1\/character-sheets\/sessions\/([^/]+)\/drafts\/([^/]+)\/undo$/;
 const SHEET_DOCUMENT_EXTRACTION_PATH_PATTERN =
   /^\/v1\/character-sheets\/sessions\/([^/]+)\/extraction$/;
+const SHEET_DOCUMENT_MAX_BYTES = 8 * 1024 * 1024;
 const SHEET_DOCUMENT_MULTIPART_OVERHEAD_BYTES = 64 * 1024;
 const SHEET_DOCUMENT_MAX_REQUEST_BYTES =
-  4 * 1024 * 1024 + SHEET_DOCUMENT_MULTIPART_OVERHEAD_BYTES;
+  16 * 1024 * 1024 + SHEET_DOCUMENT_MULTIPART_OVERHEAD_BYTES;
 const SHEET_DOCUMENT_MAX_IMAGE_PIXELS = 40_000_000;
 const SHEET_VISUAL_PAGE_MAX_BYTES = 4 * 1024 * 1024;
 const SHEET_DOCUMENT_MAX_PDF_PAGES = 64;
+const SHEET_DOCUMENT_MIME_TYPES = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+]);
 
 function toPublicSheetSession(session: SheetSession): SheetSessionView {
   return {
@@ -148,15 +151,6 @@ export async function handleCharacterSheetRequest(
     }
   }
 
-  const draftUndoMatch = SHEET_DRAFT_UNDO_PATH_PATTERN.exec(path);
-  if (draftUndoMatch !== null) {
-    const sessionId = draftUndoMatch[1] ?? "";
-    const draftId = draftUndoMatch[2] ?? "";
-    if (method === "POST") {
-      return handleUndoDraft(sessionId, draftId, request, deps);
-    }
-  }
-
   const draftMatch = SHEET_DRAFT_PATH_PATTERN.exec(path);
   if (draftMatch !== null) {
     const sessionId = draftMatch[1] ?? "";
@@ -221,12 +215,26 @@ async function handleExtractSheetDocument(
   } catch {
     return errorResponse("SHEET_DOCUMENT_INVALID_REQUEST");
   }
+  const documents = form.getAll("document");
+  const document = documents.length === 1 ? documents[0] : null;
+  if (!(document instanceof File)) {
+    return errorResponse("SHEET_DOCUMENT_INVALID_REQUEST");
+  }
   const pageValues = form.getAll("page");
   const pages = pageValues.filter(
     (value): value is File => value instanceof File,
   );
-  if (pages.length !== 1 || pages.length !== pageValues.length) {
+  if (pages.length !== pageValues.length || pages.length > 3) {
     return errorResponse("SHEET_DOCUMENT_INVALID_REQUEST");
+  }
+  if (!SHEET_DOCUMENT_MIME_TYPES.has(document.type)) {
+    return errorResponse("SHEET_DOCUMENT_INVALID_TYPE");
+  }
+  if (document.size === 0 || document.size > SHEET_DOCUMENT_MAX_BYTES) {
+    return errorResponse("SHEET_DOCUMENT_TOO_LARGE");
+  }
+  if (!(await hasValidDocumentContent(document))) {
+    return errorResponse("SHEET_DOCUMENT_INVALID_CONTENT");
   }
   for (const page of pages) {
     if (page.type !== "image/jpeg") {
@@ -252,9 +260,7 @@ async function handleExtractSheetDocument(
       const draft = compileExtractedCharacterStructure({
         structure: observed,
         sessionId: auth.sessionId,
-        sourceSheetId: deriveDocumentSourceId(
-          pages[0]?.name ?? "uploaded-sheet",
-        ),
+        sourceSheetId: deriveDocumentSourceId(document.name),
       });
       console.info("character-sheet draft compiled", {
         compiledSectionCount: draft.sections?.length ?? 0,
@@ -291,7 +297,9 @@ function countObservedFields(nodes: readonly ExtractedCharacterNode[]): number {
 
 function countUngroupedFields(draft: CharacterSheetDraft): number {
   const assigned = new Set(
-    draft.sections?.flatMap((section) => section.fieldKeys) ?? [],
+    draft.structure
+      .filter((p) => p.kind === "field" && p.parentKey !== null)
+      .map((p) => p.key),
   );
   return draft.fields.filter((field) => !assigned.has(field.key)).length;
 }
@@ -799,91 +807,6 @@ async function handleConfirmDraft(
   return jsonResponse(200, {
     draft: committed.draft,
   });
-}
-
-async function handleUndoDraft(
-  sessionId: string,
-  draftId: string,
-  request: Request,
-  deps: AppDeps,
-): Promise<Response> {
-  const auth = await authorizeSheetSessionFromRequest(sessionId, request, deps);
-  if (auth.kind === "response") {
-    return auth.response;
-  }
-
-  if (!hasJsonContentType(request)) {
-    return errorResponse("INVALID_REQUEST", "Expected application/json.");
-  }
-  const body = await readBoundedJson(request);
-  if (body === null) {
-    return errorResponse("INVALID_REQUEST", "Request body is malformed or too large.");
-  }
-
-  const parsed = SheetDraftUndoRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return errorResponse("INVALID_REQUEST", "The request body must contain an expectedVersion integer.");
-  }
-  const expectedVersion = parsed.data.expectedVersion;
-
-  if (deps.sheetDraftStore === undefined) {
-    return draftStorageUnavailable();
-  }
-
-  const headIdentity: DraftHeadIdentity = {
-    sessionId: auth.sessionId,
-    draftId,
-  };
-  const draftIdentity: CharacterSheetDraftIdentity = {
-    sessionId: auth.sessionId,
-    draftId,
-  };
-
-  const head = await deps.sheetDraftHeadRepository.getHead(headIdentity);
-  if (head === null) {
-    return errorResponse("SHEET_DRAFT_NOT_FOUND");
-  }
-
-  if (head.currentVersion !== expectedVersion) {
-    return errorResponse("SHEET_DRAFT_VERSION_CONFLICT", "The draft version does not match the expected version.");
-  }
-
-  const currentDraft = await deps.sheetDraftStore.getDraftVersion(
-    draftIdentity,
-    head.currentVersion,
-  );
-  if (currentDraft === null) {
-    return errorResponse("SHEET_DRAFT_NOT_FOUND");
-  }
-
-  if (currentDraft.confirmed === true) {
-    return errorResponse("SHEET_DRAFT_CONFIRMED");
-  }
-
-  if (head.currentVersion <= 1) {
-    return errorResponse("SHEET_DRAFT_VERSION_CONFLICT", "Cannot undo the initial draft version.");
-  }
-
-  const previousDraft = await deps.sheetDraftStore.getDraftVersion(
-    draftIdentity,
-    head.currentVersion - 1,
-  );
-  if (previousDraft === null) {
-    return errorResponse("SHEET_DRAFT_NOT_FOUND");
-  }
-
-  const nextVersion = bumpDraftVersion(previousDraft);
-
-  const committed = await claimCommitDraft(
-    { headIdentity, head, nextVersion },
-    deps,
-  );
-  if (committed.kind === "error") {
-    return committed.response;
-  }
-
-  traceSheetDraft(deps, "draft undo response", committed.draft);
-  return jsonResponse(200, committed.draft);
 }
 
 type ClaimCommitOutcome =

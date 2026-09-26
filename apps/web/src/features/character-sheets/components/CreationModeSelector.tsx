@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { ArrowRight, FileUp, PenLine, Sparkles } from "lucide-react";
 
 export interface CreationChoice {
   id: string;
@@ -53,27 +52,19 @@ export function CreationModeSelector({
             onClick={() => onChoose(choice.id)}
             disabled={busy || choice.disabled === true}
           >
-            <span className="character-workshop__landing-choice-topline">
-              <span
-                className="character-workshop__landing-choice-icon"
-                aria-hidden="true"
-              >
-                <ChoiceIcon id={choice.id} />
-              </span>
-              <span className="character-workshop__landing-choice-title">
-                {choice.title}
-                {choice.badge !== undefined && (
-                  <span className="character-workshop__badge">
-                    {choice.badge}
-                  </span>
-                )}
-              </span>
+            <span className="character-workshop__landing-choice-title">
+              {choice.title}
+              {choice.badge !== undefined && (
+                <span className="character-workshop__badge">
+                  {choice.badge}
+                </span>
+              )}
             </span>
             <span className="character-workshop__landing-choice-description">
               {choice.description}
             </span>
             <span className="character-workshop__landing-choice-cta">
-              {choice.cta} <ArrowRight aria-hidden="true" />
+              {choice.cta}
             </span>
           </button>
         ))}
@@ -86,10 +77,4 @@ export function CreationModeSelector({
       {children}
     </div>
   );
-}
-
-function ChoiceIcon({ id }: { id: string }) {
-  if (id === "upload") return <FileUp />;
-  if (id === "manual") return <PenLine />;
-  return <Sparkles />;
 }

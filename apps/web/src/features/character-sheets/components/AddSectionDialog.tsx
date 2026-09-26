@@ -5,7 +5,7 @@ interface AddSectionDialogProps {
   open: boolean;
   sections: DraftSection[];
   onClose(): void;
-  onSubmit(section: DraftSection): void;
+  onSubmit(section: { key: string; title: string; parentKey: string | null }): void;
 }
 
 export function AddSectionDialog({
@@ -45,8 +45,7 @@ export function AddSectionDialog({
     onSubmit({
       key: nextKey,
       title: nextTitle,
-      fieldKeys: [],
-      ...(parentKey === "" ? {} : { parentKey }),
+      parentKey: parentKey === "" ? null : parentKey,
     });
     setTitle("");
     setKey("");

@@ -1,5 +1,4 @@
-import { Check, Settings2, Trash2 } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import type {
   CharacterSheetDraft,
   DraftField,
@@ -7,23 +6,17 @@ import type {
   DraftMutation,
   DraftValue,
 } from "@repo/character-sheet-draft";
-
-type MutationResult = void | boolean | Promise<void | boolean>;
+import { getParent } from "@repo/character-sheet-draft";
 
 export interface FieldEditorCallbacks {
-  onSetValue(key: string, value: DraftValue): MutationResult;
-  onClearValue(key: string): MutationResult;
-  onRemoveField(key: string): MutationResult;
-  onUpdateField(
-    field: Extract<DraftMutation, { op: "update_field" }>["field"],
-  ): MutationResult;
-  onPlaceNode(
-    node: { kind: "field" | "section"; key: string },
-    destination: {
-      parent: { kind: "root" } | { kind: "section"; key: string };
-      before: { kind: "field" | "section"; key: string } | null;
-    },
-  ): MutationResult;
+  onSetValue(key: string, value: DraftValue): void;
+  onClearValue(key: string): void;
+  onRemoveField(key: string): void;
+  onSetFieldLabel(key: string, label: string): void;
+  onSetFieldType(
+    field: Extract<DraftMutation, { op: "set_field_type" }>["field"],
+  ): void;
+  onMoveField(key: string, parentKey: string | null): void;
 }
 
 interface FieldEditorProps {
@@ -58,11 +51,7 @@ export function FieldEditor({
   const [max, setMax] = useState(field.max?.toString() ?? "");
   const [options, setOptions] = useState(field.options?.join("\n") ?? "");
   const [structureError, setStructureError] = useState<string | null>(null);
-  const settingsRef = useRef<HTMLDetailsElement>(null);
-  const currentSection =
-    (draft.sections ?? []).find((section) =>
-      section.fieldKeys.includes(field.key),
-    )?.key ?? "";
+  const currentSection = getParent(draft, field.key) ?? "";
 
   useEffect(() => {
     setLabel(field.label);
@@ -73,17 +62,16 @@ export function FieldEditor({
     setStructureError(null);
   }, [field]);
 
-  async function applySettings() {
+  function applySettings() {
     const nextLabel = label.trim();
     if (nextLabel === "") {
       setStructureError("A field label is required.");
       return;
     }
-    const nextField = { key: field.key, label: nextLabel, type: pendingType } as Extract<
+    const nextField = { key: field.key, type: pendingType } as Extract<
       DraftMutation,
-      { op: "update_field" }
+      { op: "set_field_type" }
     >["field"];
-    let updateResult: MutationResult;
     if (pendingType === "number") {
       const parsedMin = min === "" ? undefined : Number(min);
       const parsedMax = max === "" ? undefined : Number(max);
@@ -102,7 +90,7 @@ export function FieldEditor({
         setStructureError("The minimum cannot exceed the maximum.");
         return;
       }
-      updateResult = callbacks.onUpdateField({
+      callbacks.onSetFieldType({
         ...nextField,
         ...(parsedMin === undefined ? {} : { min: parsedMin }),
         ...(parsedMax === undefined ? {} : { max: parsedMax }),
@@ -116,16 +104,13 @@ export function FieldEditor({
         setStructureError("A choice field needs at least one option.");
         return;
       }
-      updateResult = callbacks.onUpdateField({
-        ...nextField,
-        options: parsedOptions,
-      });
+      callbacks.onSetFieldType({ ...nextField, options: parsedOptions });
     } else {
-      updateResult = callbacks.onUpdateField(nextField);
+      callbacks.onSetFieldType(nextField);
     }
-    const confirmed = (await updateResult) !== false;
+    if (nextLabel !== field.label)
+      callbacks.onSetFieldLabel(field.key, nextLabel);
     setStructureError(null);
-    if (confirmed) settingsRef.current?.removeAttribute("open");
   }
 
   return (
@@ -145,12 +130,8 @@ export function FieldEditor({
         </div>
       </div>
       {!readOnly && (
-        <details
-          ref={settingsRef}
-          className="character-workshop__field-settings"
-        >
+        <details className="character-workshop__field-settings">
           <summary>
-            <Settings2 aria-hidden="true" />
             Field settings
             <span className="character-workshop__sr-only">
               {" "}
@@ -220,16 +201,13 @@ export function FieldEditor({
                 aria-label={`Assign ${field.label} to section`}
                 value={currentSection}
                 onChange={(event) =>
-                  callbacks.onPlaceNode(
-                    { kind: "field", key: field.key },
-                    {
-                      parent: event.currentTarget.value === "" ? { kind: "root" } : { kind: "section", key: event.currentTarget.value },
-                      before: null,
-                    },
+                  callbacks.onMoveField(
+                    field.key,
+                    event.currentTarget.value || null,
                   )
                 }
               >
-                <option value="">Unassigned (Root)</option>
+                <option value="">Unassigned</option>
                 {(draft.sections ?? []).map((section) => (
                   <option key={section.key} value={section.key}>
                     {section.title}
@@ -246,9 +224,8 @@ export function FieldEditor({
               <button
                 type="button"
                 className="character-workshop__btn character-workshop__btn--secondary"
-                onClick={() => void applySettings()}
+                onClick={applySettings}
               >
-                <Check aria-hidden="true" />
                 Apply settings
               </button>
               <button
@@ -256,7 +233,6 @@ export function FieldEditor({
                 className="character-workshop__btn character-workshop__btn--danger"
                 onClick={() => callbacks.onRemoveField(field.key)}
               >
-                <Trash2 aria-hidden="true" />
                 Remove field
               </button>
             </div>

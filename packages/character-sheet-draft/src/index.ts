@@ -12,10 +12,5 @@ export * from "./finalize";
 export * from "./keys";
 export * from "./draft-store";
 export * from "./preview/index";
-export {
-  getRootNodeOrder,
-  getOrderedNodes,
-  getFieldParentKey,
-  getSectionParentKey,
-  isDescendant,
-} from "./draft-schema";
+import type { DraftField, DraftSection, DraftPlacement, DraftValue } from "./draft-schema";
+export type { DraftField, DraftSection, DraftPlacement, DraftValue };

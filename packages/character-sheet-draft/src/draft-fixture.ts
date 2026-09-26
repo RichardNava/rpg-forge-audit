@@ -11,7 +11,7 @@ export function makeDraft(
   overrides: Partial<CharacterSheetDraft> = {},
 ): CharacterSheetDraft {
   const base: CharacterSheetDraft = {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: "draft.abc123",
     sessionId: "session.abc123",
     baseVersion: 1,
@@ -46,6 +46,13 @@ export function makeDraft(
       { key: "veteran", label: "Veteran", type: "checkbox", locked: false },
     ],
     sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+      { kind: "field", key: "strength", parentKey: null },
+      { kind: "field", key: "homeland", parentKey: null },
+      { kind: "field", key: "weapon", parentKey: null },
+      { kind: "field", key: "veteran", parentKey: null },
+    ],
     values: {
       character_name: "Aria Stone",
       strength: 12,

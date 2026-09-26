@@ -96,7 +96,7 @@ function makeDraft(
   draftId = "draft.abc123",
 ): CharacterSheetDraft {
   return {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId,
     sessionId,
     baseVersion: 1,
@@ -128,6 +128,14 @@ function makeDraft(
         locked: true,
       },
       { key: "veteran", label: "Veteran", type: "checkbox", locked: false },
+    ],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+      { kind: "field", key: "strength", parentKey: null },
+      { kind: "field", key: "homeland", parentKey: null },
+      { kind: "field", key: "weapon", parentKey: null },
+      { kind: "field", key: "veteran", parentKey: null },
     ],
     values: {
       character_name: "Aria Stone",
@@ -396,6 +404,13 @@ describe("character-sheet document extraction", () => {
     const { sessionId, accessToken } = await createSheetSession(harness);
     const form = new FormData();
     form.append(
+      "document",
+      new Blob(["%PDF-1.4\n/Type /Page\nsheet-bytes"], {
+        type: "application/pdf",
+      }),
+      "nyra.pdf",
+    );
+    form.append(
       "page",
       new Blob(
         [new Uint8Array([0xff, 0xd8, 0xff, 0xc0, 0, 7, 8, 0, 1, 0, 1])],
@@ -438,7 +453,7 @@ describe("character-sheet document extraction", () => {
     const { sessionId, accessToken } = await createSheetSession(harness);
     const textForm = new FormData();
     textForm.append(
-      "page",
+      "document",
       new Blob(["text"], { type: "text/plain" }),
       "sheet.txt",
     );
@@ -459,6 +474,11 @@ describe("character-sheet document extraction", () => {
     );
 
     const pdfForm = new FormData();
+    pdfForm.append(
+      "document",
+      new Blob(["%PDF-1.4\n/Type /Page"], { type: "application/pdf" }),
+      "sheet.pdf",
+    );
     const unavailable = await handleRequest(
       new Request(
         `${BASE_URL}/v1/character-sheets/sessions/${sessionId}/extraction`,
@@ -470,9 +490,9 @@ describe("character-sheet document extraction", () => {
       ),
       harness.deps,
     );
-    expect(unavailable.status).toBe(400);
+    expect(unavailable.status).toBe(503);
     expect((await readJson<ErrorBody>(unavailable)).error.code).toBe(
-      "SHEET_DOCUMENT_INVALID_REQUEST",
+      "SHEET_DOCUMENT_EXTRACTION_UNAVAILABLE",
     );
   });
 });

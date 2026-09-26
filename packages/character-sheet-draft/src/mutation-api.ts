@@ -2,23 +2,20 @@ import { z } from "zod";
 import type {
   CharacterSheetDraft,
   DraftField,
-  DraftFieldType,
+  DraftPlacement,
   DraftSection,
-  DraftNodeRef,
   DraftValue,
 } from "./draft-schema";
 import {
   DraftFieldSchema,
-  DraftNodeRefSchema,
   DraftSectionSchema,
   DraftValueSchema,
   MAX_DRAFT_FIELD_KEY_CHARS,
-  MAX_DRAFT_SECTION_DEPTH,
   MAX_DRAFT_SURFACE_FIELDS,
 } from "./draft-schema";
 import { draftError } from "./errors";
 import { assertDraftEditable } from "./finalize";
-import { assertDraftFieldExists } from "./guided-edit";
+import { assertDraftFieldExists, getChildren, getParent } from "./guided-edit";
 
 export const DraftAddFieldSchema = z.strictObject({
   key: z
@@ -54,20 +51,7 @@ const DraftFieldTypeChangeSchema = z.strictObject({
   max: z.number().finite().optional(),
 });
 
-const DraftFieldUpdateSchema = DraftFieldTypeChangeSchema.extend({
-  label: z.string().min(1).max(256).regex(/\S/),
-});
-
 export const DraftMutationSchema = z.discriminatedUnion("op", [
-  z.strictObject({
-    op: z.literal("place_node"),
-    node: DraftNodeRefSchema,
-    destination: z.strictObject({
-      parent: z.union([z.strictObject({ kind: z.literal("root") }), z.strictObject({ kind: z.literal("section"), key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS) })]),
-      before: DraftNodeRefSchema.nullable(),
-    }),
-  }),
-  z.strictObject({ op: z.literal("remove_section"), key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS), strategy: z.literal("reject_if_nonempty") }),
   z.strictObject({
     op: z.literal("set_value"),
     key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS),
@@ -82,8 +66,10 @@ export const DraftMutationSchema = z.discriminatedUnion("op", [
     op: z.literal("set_field_type"),
     field: DraftFieldTypeChangeSchema,
   }),
-  z.strictObject({ op: z.literal("update_field"), field: DraftFieldUpdateSchema }),
-  z.strictObject({ op: z.literal("add_section"), section: DraftSectionSchema }),
+  z.strictObject({
+    op: z.literal("add_section"),
+    section: DraftSectionSchema,
+  }),
   z.strictObject({
     op: z.literal("rename_section"),
     key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS),
@@ -92,24 +78,12 @@ export const DraftMutationSchema = z.discriminatedUnion("op", [
   z.strictObject({
     op: z.literal("move_field"),
     key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS),
-    sectionKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
-  }),
-  z.strictObject({
-    op: z.literal("place_field"),
-    key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS),
-    sectionKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
-    beforeFieldKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
+    parentKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
   }),
   z.strictObject({
     op: z.literal("reparent_section"),
     key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS),
     parentKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
-  }),
-  z.strictObject({
-    op: z.literal("place_section"),
-    key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS),
-    parentKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
-    beforeSectionKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).nullable(),
   }),
   z.strictObject({
     op: z.literal("clear_value"),
@@ -148,38 +122,6 @@ export function applyDraftMutation(
   const mutation = parseDraftMutation(mutationInput);
 
   switch (mutation.op) {
-    case "place_node": {
-      const sections = draft.sections ?? [];
-      const sourceExists = mutation.node.kind === "field"
-        ? draft.fields.some((field) => field.key === mutation.node.key)
-        : sections.some((section) => section.key === mutation.node.key);
-      if (!sourceExists) throw draftError("invalid_mutation", "The node does not exist.");
-      const destinationParent = mutation.destination.parent.kind === "section" ? mutation.destination.parent.key : null;
-      if (destinationParent !== null && !sections.some((section) => section.key === destinationParent)) throw draftError("invalid_mutation", "The destination section does not exist.");
-      if (mutation.node.kind === "section" && destinationParent !== null) {
-        if (mutation.node.key === destinationParent || descendantSectionKeys(mutation.node.key, sections).has(destinationParent)) throw draftError("invalid_mutation", "A section cannot be moved into its own descendant.");
-      }
-      const normalized = materializeOrders(draft);
-      const sourceParent = parentForNode(normalized, mutation.node);
-      const destination = orderedNodes(normalized, destinationParent).filter((ref) => !(ref.kind === mutation.node.kind && ref.key === mutation.node.key));
-      if (mutation.destination.before !== null && !destination.some((ref) => ref.kind === mutation.destination.before!.kind && ref.key === mutation.destination.before!.key)) throw draftError("invalid_mutation", "The placement target is not in the destination.");
-      const next = setOrderedNodes(normalized, sourceParent, orderedNodes(normalized, sourceParent).filter((ref) => !(ref.kind === mutation.node.kind && ref.key === mutation.node.key)));
-      const insertAt = mutation.destination.before === null ? destination.length : destination.findIndex((ref) => ref.kind === mutation.destination.before!.kind && ref.key === mutation.destination.before!.key);
-      const placed = setOrderedNodes(next, destinationParent, [...destination.slice(0, insertAt), mutation.node, ...destination.slice(insertAt)]);
-      const updated = mutation.node.kind === "section" ? { ...placed, sections: (placed.sections ?? []).map((section) => section.key !== mutation.node.key ? section : destinationParent === null ? (({ parentKey: _parentKey, ...root }) => root)(section) : { ...section, parentKey: destinationParent }) } : placed;
-      if (maxSectionDepth(updated.sections ?? []) > MAX_DRAFT_SECTION_DEPTH) throw draftError("invalid_mutation", "The section hierarchy exceeds the maximum depth.");
-      return updated;
-    }
-    case "remove_section": {
-      const sections = draft.sections ?? [];
-      const section = sections.find((entry) => entry.key === mutation.key);
-      if (section === undefined) throw draftError("invalid_mutation", "The section does not exist.");
-      const childCount = sections.filter((entry) => entry.parentKey === section.key).length;
-      if (section.fieldKeys.length > 0 || childCount > 0) throw draftError("invalid_mutation", `The section contains ${section.fieldKeys.length} fields and ${childCount} subsections.`);
-      const normalized = materializeOrders(draft);
-      const parent = parentForNode(normalized, { kind: "section", key: section.key });
-      return { ...setOrderedNodes(normalized, parent, orderedNodes(normalized, parent).filter((ref) => !(ref.kind === "section" && ref.key === section.key))), sections: sections.filter((entry) => entry.key !== section.key) };
-    }
     case "set_value": {
       const field = assertDraftFieldExists(draft, mutation.key);
       if (field.locked) {
@@ -245,27 +187,6 @@ export function applyDraftMutation(
         values,
       };
     }
-    case "update_field": {
-      const current = assertDraftFieldExists(draft, mutation.field.key);
-      const replacement = fieldForTypeChange(current, mutation.field);
-      const values = { ...draft.values };
-      const currentValue = values[current.key];
-      if (
-        currentValue !== undefined &&
-        !valueMatchesType(currentValue, replacement)
-      ) {
-        delete values[current.key];
-      }
-      return {
-        ...draft,
-        fields: draft.fields.map((entry) =>
-          entry.key === current.key
-            ? { ...replacement, label: mutation.field.label }
-            : entry,
-        ),
-        values,
-      };
-    }
     case "add_section": {
       const sections = draft.sections ?? [];
       if (sections.some((section) => section.key === mutation.section.key)) {
@@ -274,7 +195,10 @@ export function applyDraftMutation(
           `Draft section "${mutation.section.key}" already exists.`,
         );
       }
-      return { ...draft, sections: [...sections, mutation.section] };
+      // Add to structure at the end of root level
+      const structure = [...draft.structure];
+      structure.push({ kind: "section", key: mutation.section.key, parentKey: null });
+      return { ...draft, sections: [...sections, mutation.section], structure };
     }
     case "rename_section": {
       const sections = draft.sections ?? [];
@@ -297,82 +221,21 @@ export function applyDraftMutation(
       const field = assertDraftFieldExists(draft, mutation.key);
       const sections = draft.sections ?? [];
       if (
-        mutation.sectionKey !== null &&
-        !sections.some((section) => section.key === mutation.sectionKey)
+        mutation.parentKey !== null &&
+        !sections.some((section) => section.key === mutation.parentKey)
       ) {
         throw draftError(
           "invalid_mutation",
-          `Draft section "${mutation.sectionKey}" does not exist.`,
+          `Draft section "${mutation.parentKey}" does not exist.`,
         );
       }
-      return {
-        ...draft,
-        sections: sections.map((section) => ({
-          ...section,
-          fieldKeys:
-            section.key === mutation.sectionKey
-              ? [
-                  ...section.fieldKeys.filter((key) => key !== field.key),
-                  field.key,
-                ]
-              : section.fieldKeys.filter((key) => key !== field.key),
-        })),
-      };
-    }
-    case "place_field": {
-      const field = assertDraftFieldExists(draft, mutation.key);
-      const sections = draft.sections ?? [];
-      if (
-        mutation.sectionKey !== null &&
-        !sections.some((section) => section.key === mutation.sectionKey)
-      ) {
-        throw draftError("invalid_mutation", "The destination section does not exist.");
-      }
-      const destination =
-        mutation.sectionKey === null
-          ? draft.fields.map((entry) => entry.key).filter((key) =>
-              !sections.some((section) => section.fieldKeys.includes(key)),
-            )
-          : (sections.find((section) => section.key === mutation.sectionKey)?.fieldKeys ?? []);
-      if (
-        mutation.beforeFieldKey !== null &&
-        !destination.includes(mutation.beforeFieldKey)
-      ) {
-        throw draftError("invalid_mutation", "The placement target is not in the destination.");
-      }
-      const nextKeys = insertBefore(
-        destination.filter((key) => key !== field.key),
-        field.key,
-        mutation.beforeFieldKey,
+      // Update structure: find the field placement and update its parentKey
+      const structure = draft.structure.map((placement) =>
+        placement.kind === "field" && placement.key === field.key
+          ? { ...placement, parentKey: mutation.parentKey }
+          : placement,
       );
-      if (mutation.sectionKey === null) {
-        const assignedKeys = new Set(
-          sections.flatMap((section) => section.fieldKeys),
-        );
-        return {
-          ...draft,
-          fields: [
-            ...nextKeys.map((key) =>
-              draft.fields.find((entry) => entry.key === key)!,
-            ),
-            ...draft.fields.filter((entry) => assignedKeys.has(entry.key)),
-          ],
-          sections: sections.map((section) => ({
-            ...section,
-            fieldKeys: section.fieldKeys.filter((key) => key !== field.key),
-          })),
-        };
-      }
-      return {
-        ...draft,
-        sections: sections.map((section) => ({
-          ...section,
-          fieldKeys:
-            section.key === mutation.sectionKey
-              ? nextKeys
-              : section.fieldKeys.filter((key) => key !== field.key),
-        })),
-      };
+      return { ...draft, structure };
     }
     case "reparent_section": {
       const sections = draft.sections ?? [];
@@ -391,46 +254,29 @@ export function applyDraftMutation(
           `Draft section "${mutation.parentKey}" does not exist.`,
         );
       }
-      return {
-        ...draft,
-        sections: sections.map((section) => {
-          if (section.key !== mutation.key) return section;
-          if (mutation.parentKey === null) {
-            const { parentKey: _parentKey, ...rootSection } = section;
-            return rootSection;
-          }
-          return { ...section, parentKey: mutation.parentKey };
-        }),
-      };
-    }
-    case "place_section": {
-      const sections = draft.sections ?? [];
-      const section = sections.find((entry) => entry.key === mutation.key);
-      if (section === undefined) throw draftError("invalid_mutation", "The section does not exist.");
-      if (mutation.parentKey === mutation.key) throw draftError("invalid_mutation", "A section cannot contain itself.");
-      const descendants = descendantSectionKeys(section.key, sections);
-      if (mutation.parentKey !== null && descendants.has(mutation.parentKey)) {
-        throw draftError("invalid_mutation", "A section cannot be moved into its descendant.");
+      // Check for self-parenting
+      if (mutation.parentKey === mutation.key) {
+        throw draftError(
+          "invalid_mutation",
+          `Node "${mutation.key}" cannot parent itself.`,
+        );
       }
-      const siblings = sections.filter((entry) => (entry.parentKey ?? null) === mutation.parentKey);
-      if (mutation.beforeSectionKey !== null && !siblings.some((entry) => entry.key === mutation.beforeSectionKey)) {
-        throw draftError("invalid_mutation", "The placement target is not a sibling.");
+      // Check for cycles
+      if (mutation.parentKey !== null) {
+        if (wouldCreateCycle(draft, mutation.key, mutation.parentKey)) {
+          throw draftError(
+            "invalid_mutation",
+            "Reparenting would create a cycle.",
+          );
+        }
       }
-      const reordered = insertBefore(
-        sections.filter((entry) => entry.key !== section.key).map((entry) => entry.key),
-        section.key,
-        mutation.beforeSectionKey,
+      // Update structure: find the section placement and update its parentKey
+      const structure = draft.structure.map((placement) =>
+        placement.kind === "section" && placement.key === mutation.key
+          ? { ...placement, parentKey: mutation.parentKey }
+          : placement,
       );
-      return {
-        ...draft,
-        sections: reordered.map((key) => {
-          const entry = sections.find((candidate) => candidate.key === key)!;
-          if (entry.key !== section.key) return entry;
-          return mutation.parentKey === null
-            ? (({ parentKey: _parentKey, ...root }) => root)(entry)
-            : { ...entry, parentKey: mutation.parentKey };
-        }),
-      };
+      return { ...draft, structure };
     }
     case "lock_field": {
       const field = assertDraftFieldExists(draft, mutation.key);
@@ -467,9 +313,13 @@ export function applyDraftMutation(
         );
       }
       const field = validateAddField(mutation.field);
+      // Add to structure at root level
+      const structure = [...draft.structure];
+      structure.push({ kind: "field", key: field.key, parentKey: null });
       return {
         ...draft,
         fields: [...draft.fields, field],
+        structure,
       };
     }
     case "remove_field": {
@@ -483,19 +333,40 @@ export function applyDraftMutation(
       const fields = draft.fields.filter((entry) => entry.key !== field.key);
       const values = { ...draft.values };
       delete values[field.key];
+      // Remove from structure
+      const structure = draft.structure.filter(
+        (p) => !(p.kind === "field" && p.key === field.key),
+      );
       return {
         ...draft,
         fields,
-        sections: (draft.sections ?? []).map((section) => ({
-          ...section,
-          fieldKeys: section.fieldKeys.filter((key) => key !== field.key),
-        })),
         values,
+        structure,
         characterName:
           field.key === "character_name" ? null : draft.characterName,
       };
     }
   }
+}
+
+function wouldCreateCycle(
+  draft: CharacterSheetDraft,
+  sectionKey: string,
+  newParentKey: string,
+): boolean {
+  // Walk up from newParentKey to see if we reach sectionKey
+  const parentMap = new Map<string, string | null>();
+  for (const p of draft.structure) {
+    if (p.kind === "section") {
+      parentMap.set(p.key, p.parentKey);
+    }
+  }
+  let current: string | null = newParentKey;
+  while (current !== null) {
+    if (current === sectionKey) return true;
+    current = parentMap.get(current) ?? null;
+  }
+  return false;
 }
 
 function fieldForTypeChange(
@@ -535,89 +406,6 @@ function fieldForTypeChange(
     };
   }
   return base;
-}
-
-function insertBefore(
-  keys: string[],
-  key: string,
-  beforeKey: string | null,
-): string[] {
-  if (beforeKey === null) return [...keys, key];
-  const index = keys.indexOf(beforeKey);
-  return [...keys.slice(0, index), key, ...keys.slice(index)];
-}
-
-function materializeOrders(draft: CharacterSheetDraft): CharacterSheetDraft {
-  const sections = draft.sections ?? [];
-  const assigned = new Set(sections.flatMap((section) => section.fieldKeys));
-  const rootNodeOrder = draft.rootNodeOrder ?? [
-    ...draft.fields.filter((field) => !assigned.has(field.key)).map((field) => ({ kind: "field" as const, key: field.key })),
-    ...sections.filter((section) => section.parentKey === undefined).map((section) => ({ kind: "section" as const, key: section.key })),
-  ];
-  return {
-    ...draft,
-    rootNodeOrder,
-    sections: sections.map((section) => ({
-      ...section,
-      nodeOrder: section.nodeOrder ?? [
-        ...section.fieldKeys.map((key) => ({ kind: "field" as const, key })),
-        ...sections.filter((child) => child.parentKey === section.key).map((child) => ({ kind: "section" as const, key: child.key })),
-      ],
-    })),
-  };
-}
-
-function orderedNodes(draft: CharacterSheetDraft, parentKey: string | null): DraftNodeRef[] {
-  if (parentKey === null) return draft.rootNodeOrder ?? [];
-  return draft.sections?.find((section) => section.key === parentKey)?.nodeOrder ?? [];
-}
-
-function parentForNode(draft: CharacterSheetDraft, node: DraftNodeRef): string | null {
-  if (node.kind === "section") return draft.sections?.find((section) => section.key === node.key)?.parentKey ?? null;
-  const section = draft.sections?.find((entry) => entry.fieldKeys.includes(node.key));
-  return section?.key ?? null;
-}
-
-function setOrderedNodes(draft: CharacterSheetDraft, parentKey: string | null, nodeOrder: DraftNodeRef[]): CharacterSheetDraft {
-  if (parentKey === null) return { ...draft, rootNodeOrder: nodeOrder };
-  return {
-    ...draft,
-    sections: (draft.sections ?? []).map((section) => section.key !== parentKey ? section : {
-      ...section,
-      nodeOrder,
-      fieldKeys: nodeOrder.filter((ref) => ref.kind === "field").map((ref) => ref.key),
-    }),
-  };
-}
-
-function maxSectionDepth(sections: readonly DraftSection[]): number {
-  return Math.max(0, ...sections.map((section) => {
-    let depth = 1;
-    let parentKey = section.parentKey;
-    while (parentKey !== undefined) {
-      depth += 1;
-      parentKey = sections.find((candidate) => candidate.key === parentKey)?.parentKey;
-    }
-    return depth;
-  }));
-}
-
-function descendantSectionKeys(
-  sectionKey: string,
-  sections: readonly DraftSection[],
-): Set<string> {
-  const descendants = new Set<string>();
-  const pending = [sectionKey];
-  while (pending.length > 0) {
-    const parentKey = pending.pop();
-    for (const section of sections) {
-      if (section.parentKey === parentKey && !descendants.has(section.key)) {
-        descendants.add(section.key);
-        pending.push(section.key);
-      }
-    }
-  }
-  return descendants;
 }
 
 function valueMatchesType(value: DraftValue, field: DraftField): boolean {

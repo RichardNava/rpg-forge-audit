@@ -306,12 +306,12 @@ describe("draft mutation api", () => {
     });
     const sectioned = applyDraftMutation(typed, {
       op: "add_section",
-      section: { key: "attributes", title: "Atributos", fieldKeys: [] },
+      section: { key: "attributes", title: "Atributos" },
     });
     const moved = applyDraftMutation(sectioned, {
       op: "move_field",
       key: "strength",
-      sectionKey: "attributes",
+      parentKey: "attributes",
     });
     expect(
       moved.fields.find((field) => field.key === "strength"),
@@ -322,15 +322,28 @@ describe("draft mutation api", () => {
       max: 5,
     });
     expect(moved.sections).toEqual([
-      { key: "attributes", title: "Atributos", fieldKeys: ["strength"] },
+      { key: "attributes", title: "Atributos" },
     ]);
+    const fieldPlacement = moved.structure.find(
+      (p) => p.kind === "field" && p.key === "strength",
+    );
+    expect(fieldPlacement?.parentKey).toBe("attributes");
   });
 
   it("reparents a section and restores it to the root", () => {
     const draft = makeDraft({
       sections: [
-        { key: "attributes", title: "Attributes", fieldKeys: [] },
-        { key: "physical", title: "Physical", fieldKeys: ["strength"] },
+        { key: "attributes", title: "Attributes" },
+        { key: "physical", title: "Physical" },
+      ],
+      structure: [
+        { kind: "section", key: "attributes", parentKey: null },
+        { kind: "section", key: "physical", parentKey: null },
+        { kind: "field", key: "character_name", parentKey: null },
+        { kind: "field", key: "strength", parentKey: null },
+        { kind: "field", key: "homeland", parentKey: null },
+        { kind: "field", key: "weapon", parentKey: null },
+        { kind: "field", key: "veteran", parentKey: null },
       ],
     });
     const nested = applyDraftMutation(draft, {
@@ -338,59 +351,18 @@ describe("draft mutation api", () => {
       key: "physical",
       parentKey: "attributes",
     });
-    expect(nested.sections?.[1]?.parentKey).toBe("attributes");
+    const physicalPlacement = nested.structure.find(
+      (p) => p.kind === "section" && p.key === "physical",
+    );
+    expect(physicalPlacement?.parentKey).toBe("attributes");
     const root = applyDraftMutation(nested, {
       op: "reparent_section",
       key: "physical",
       parentKey: null,
     });
-    expect(root.sections?.[1]?.parentKey).toBeUndefined();
-  });
-
-  it("updates a field atomically and places fields before another field", () => {
-    const draft = makeDraft({
-      sections: [
-        {
-          key: "attributes",
-          title: "Attributes",
-          fieldKeys: ["strength", "homeland"],
-        },
-      ],
-    });
-    const updated = applyDraftMutation(draft, {
-      op: "update_field",
-      field: { key: "strength", label: "Might", type: "number", min: 1 },
-    });
-    const placed = applyDraftMutation(updated, {
-      op: "place_field",
-      key: "homeland",
-      sectionKey: "attributes",
-      beforeFieldKey: "strength",
-    });
-    expect(placed.fields.find((field) => field.key === "strength")).toMatchObject({
-      label: "Might",
-      type: "number",
-      min: 1,
-    });
-    expect(placed.sections?.[0]?.fieldKeys).toEqual(["homeland", "strength"]);
-  });
-
-  it("places a section before a sibling without allowing a descendant parent", () => {
-    const draft = makeDraft({
-      sections: [
-        { key: "combat", title: "Combat", fieldKeys: [] },
-        { key: "identity", title: "Identity", fieldKeys: [] },
-      ],
-    });
-    const placed = applyDraftMutation(draft, {
-      op: "place_section",
-      key: "identity",
-      parentKey: null,
-      beforeSectionKey: "combat",
-    });
-    expect(placed.sections?.map((section) => section.key)).toEqual([
-      "identity",
-      "combat",
-    ]);
+    const rootPlacement = root.structure.find(
+      (p) => p.kind === "section" && p.key === "physical",
+    );
+    expect(rootPlacement?.parentKey).toBeNull();
   });
 });

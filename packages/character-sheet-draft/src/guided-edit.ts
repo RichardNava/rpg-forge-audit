@@ -1,6 +1,8 @@
 import type {
   CharacterSheetDraft,
   DraftField,
+  DraftPlacement,
+  DraftSection,
   DraftValue,
 } from "./draft-schema";
 import {
@@ -90,4 +92,161 @@ export function assertDraftWithinBounds(draft: CharacterSheetDraft): void {
       );
     }
   }
+}
+
+/**
+ * Derived in-memory structural index for a V2 draft.
+ * Computed on-demand, never persisted, never a structural authority.
+ */
+export interface DraftStructuralIndex {
+  /** O(1) lookup of placement by kind+key */
+  placementByKey: Map<string, DraftPlacement>;
+  /** Children grouped by parent, in structure[] order */
+  childrenByParent: Map<string | null, DraftPlacement[]>;
+  /** Parent key for each node */
+  parentByKey: Map<string, string | null>;
+  /** Depth of each node (root = 0) */
+  depthByKey: Map<string, number>;
+  /** Subtree range [start, end) in structure[] for each section */
+  subtreeRange: Map<string, { start: number; end: number }>;
+}
+
+/**
+ * Builds a structural index from a V2 draft's structure array.
+ * O(n) single pass. Derived, never persisted, never a structural authority.
+ */
+export function buildDraftStructuralIndex(draft: CharacterSheetDraft): DraftStructuralIndex {
+  const structure = draft.structure ?? [];
+  const placementByKey = new Map<string, DraftPlacement>();
+  const childrenByParent = new Map<string | null, DraftPlacement[]>();
+  const parentByKey = new Map<string, string | null>();
+  const depthByKey = new Map<string, number>();
+  const subtreeRange = new Map<string, { start: number; end: number }>();
+
+  const keyOf = (p: DraftPlacement) => `${p.kind}:${p.key}`;
+
+  // Build basic maps
+  for (const p of structure) {
+    const key = keyOf(p);
+    placementByKey.set(key, p);
+    parentByKey.set(p.key, p.parentKey);
+
+    const parentKey = p.parentKey ?? null;
+    if (!childrenByParent.has(parentKey)) {
+      childrenByParent.set(parentKey, []);
+    }
+    childrenByParent.get(parentKey)!.push(p);
+  }
+
+  // Compute depth and subtree ranges via DFS
+  function dfs(key: string, depth: number): { end: number } {
+    depthByKey.set(key, depth);
+    const start = structure.findIndex(p => keyOf(p) === key);
+    let maxEnd = start + 1;
+    const children = childrenByParent.get(key) ?? [];
+    for (const child of children) {
+      const childResult = dfs(keyOf(child), depth + 1);
+      maxEnd = Math.max(maxEnd, childResult.end);
+    }
+    subtreeRange.set(key, { start, end: maxEnd });
+    return { end: maxEnd };
+  }
+
+  // Find root sections (parentKey === null)
+  const rootSections = structure.filter(p => p.parentKey === null && p.kind === "section");
+  for (const root of rootSections) {
+    dfs(keyOf(root), 0);
+  }
+
+  // Also handle root-level fields (they have no children)
+  const rootFields = structure.filter(p => p.parentKey === null && p.kind === "field");
+  for (const field of rootFields) {
+    const key = keyOf(field);
+    if (!depthByKey.has(key)) {
+      depthByKey.set(key, 0);
+      const start = structure.findIndex(p => keyOf(p) === key);
+      subtreeRange.set(key, { start, end: start + 1 });
+    }
+  }
+
+  return {
+    placementByKey,
+    childrenByParent,
+    parentByKey,
+    depthByKey,
+    subtreeRange,
+  };
+}
+
+/**
+ * Returns children of a node in structure[] order.
+ */
+export function getChildren(draft: CharacterSheetDraft, parentKey: string | null): DraftPlacement[] {
+  const index = buildDraftStructuralIndex(draft);
+  return index.childrenByParent.get(parentKey) ?? [];
+}
+
+/**
+ * Returns the parent key of a node, or null for root.
+ */
+export function getParent(draft: CharacterSheetDraft, key: string): string | null {
+  const index = buildDraftStructuralIndex(draft);
+  return index.parentByKey.get(key) ?? null;
+}
+
+/**
+ * Returns the depth of a node (root = 0).
+ */
+export function getDepth(draft: CharacterSheetDraft, key: string): number {
+  const index = buildDraftStructuralIndex(draft);
+  return index.depthByKey.get(key) ?? 0;
+}
+
+/**
+ * Returns the subtree range [start, end) in structure[] for a section.
+ */
+export function getSubtreeRange(draft: CharacterSheetDraft, sectionKey: string): { start: number; end: number } | null {
+  const index = buildDraftStructuralIndex(draft);
+  return index.subtreeRange.get(sectionKey) ?? null;
+}
+
+/**
+ * Walks the structure in canonical preorder, yielding each node with its depth.
+ */
+export function* walkStructure(draft: CharacterSheetDraft): Generator<{ placement: DraftPlacement; depth: number }> {
+  const index = buildDraftStructuralIndex(draft);
+  
+  function* visit(key: string, depth: number): Generator<{ placement: DraftPlacement; depth: number }> {
+    const placement = index.placementByKey.get(key);
+    if (!placement) return;
+    yield { placement, depth };
+    if (placement.kind === "section") {
+      const children = index.childrenByParent.get(key) ?? [];
+      for (const child of children) {
+        yield* visit(keyOf(child), depth + 1);
+      }
+    }
+  }
+
+  const keyOf = (p: DraftPlacement) => `${p.kind}:${p.key}`;
+  
+  for (const root of draft.structure.filter(p => p.parentKey === null)) {
+    yield* visit(keyOf(root), 0);
+  }
+}
+
+/**
+ * Returns all descendants of a section in preorder.
+ */
+export function getDescendants(draft: CharacterSheetDraft, sectionKey: string): DraftPlacement[] {
+  const result: DraftPlacement[] = [];
+  const index = buildDraftStructuralIndex(draft);
+  const children = index.childrenByParent.get(sectionKey) ?? [];
+  for (const child of children) {
+    result.push(child);
+    if (child.kind === "section") {
+      result.push(...getDescendants(draft, child.key));
+    }
+  }
+  return result;
 }

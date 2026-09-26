@@ -12,13 +12,17 @@ import {
  */
 export function createBlankDraft(sessionId: string): CharacterSheetDraft {
   return initialDraftVersion({
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: crypto.randomUUID(),
     sessionId,
     mode: "npc",
     characterName: null,
     rulesContextId: null,
     fields: [blankNameField()],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+    ],
     values: {},
     source: { sourceSheetId: null, sourceRunId: null },
     confirmed: false,
@@ -27,13 +31,15 @@ export function createBlankDraft(sessionId: string): CharacterSheetDraft {
 
 export function createExampleDraft(sessionId: string): CharacterSheetDraft {
   return initialDraftVersion({
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: crypto.randomUUID(),
     sessionId,
     mode: "npc",
     characterName: "Wayfarer of the Ash Fen",
     rulesContextId: null,
     fields: exampleFields(),
+    sections: [],
+    structure: exampleFields().map((f) => ({ kind: "field" as const, key: f.key, parentKey: null })),
     values: {
       character_name: "Wayfarer of the Ash Fen",
       homeland: "Coastal Marshes",

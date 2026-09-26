@@ -180,11 +180,3 @@ export const SheetDraftRerollRequestSchema = z.strictObject({
 export type SheetDraftRerollRequest = z.infer<
   typeof SheetDraftRerollRequestSchema
 >;
-
-export const SheetDraftUndoRequestSchema = z.strictObject({
-  expectedVersion: z.number().int().min(1),
-});
-
-export type SheetDraftUndoRequest = z.infer<
-  typeof SheetDraftUndoRequestSchema
->;

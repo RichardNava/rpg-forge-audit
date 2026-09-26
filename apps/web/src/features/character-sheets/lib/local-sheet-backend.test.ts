@@ -5,7 +5,7 @@ import { createLocalSheetBackend } from "./local-sheet-backend";
 
 function makeLockedDraft(sessionId: string): CharacterSheetDraft {
   return {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: "draft.locked",
     sessionId,
     baseVersion: 1,
@@ -28,6 +28,11 @@ function makeLockedDraft(sessionId: string): CharacterSheetDraft {
         min: 1,
         max: 6,
       },
+    ],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+      { kind: "field", key: "vigor", parentKey: null },
     ],
     values: { character_name: "Sentinel", vigor: 3 },
     source: { sourceSheetId: null, sourceRunId: null },

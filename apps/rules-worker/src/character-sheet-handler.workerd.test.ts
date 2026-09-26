@@ -40,7 +40,7 @@ function bucket(): R2Bucket {
 
 function makeDraft(sessionId: string, draftId: string): CharacterSheetDraft {
   return {
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId,
     sessionId,
     baseVersion: 1,
@@ -71,6 +71,13 @@ function makeDraft(sessionId: string, draftId: string): CharacterSheetDraft {
         options: ["sword", "bow", "staff"],
         locked: true,
       },
+    ],
+    sections: [],
+    structure: [
+      { kind: "field", key: "character_name", parentKey: null },
+      { kind: "field", key: "strength", parentKey: null },
+      { kind: "field", key: "homeland", parentKey: null },
+      { kind: "field", key: "weapon", parentKey: null },
     ],
     values: {
       character_name: "Aria Stone",

@@ -101,13 +101,6 @@ export type SheetStoreConfirmOutcome =
   | { kind: "inflight" }
   | { kind: "error"; error: SheetApiError };
 
-export type SheetStoreUndoOutcome =
-  | { kind: "ok"; draft: CharacterSheetDraft }
-  | { kind: "rejected"; code: string; message: string }
-  | { kind: "not_ready" }
-  | { kind: "inflight" }
-  | { kind: "error"; error: SheetApiError };
-
 export interface SheetStore {
   getState(): SheetStoreState;
   subscribe(listener: SheetStoreListener): () => void;
@@ -121,6 +114,5 @@ export interface SheetStore {
   applyMutation(mutation: DraftMutation): Promise<SheetStoreMutationOutcome>;
   reroll(seed: string): Promise<SheetStoreRerollOutcome>;
   confirm(): Promise<SheetStoreConfirmOutcome>;
-  undo(): Promise<SheetStoreUndoOutcome>;
   reset(): void;
 }

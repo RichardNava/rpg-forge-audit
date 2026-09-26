@@ -3,7 +3,7 @@ import {
   type CharacterSheetDraft,
 } from "@repo/character-sheet-draft";
 import { CHARACTER_SHEET_API_PREFIX } from "../api/sheet-api-types";
-import { normalizeImageToJpeg, renderPdfPageImage } from "./pdf-page-images";
+import { normalizeImageToJpeg, renderPdfPageImages } from "./pdf-page-images";
 import type {
   ExtractSheetDocumentInput,
   SheetDocumentExtractionService,
@@ -35,11 +35,17 @@ export function createRemoteSheetDocumentExtractionService(
         throw new Error("The uploaded document cannot be sent for extraction.");
       }
       const form = new FormData();
-      const page =
+      form.append("document", file.blob, file.name);
+      if (file.sheetStartPage !== undefined) {
+        form.append("sheetStartPage", String(file.sheetStartPage));
+      }
+      const pages =
         file.mimeType === "application/pdf"
-          ? await renderPdfPageImage(file.blob, file.sheetStartPage)
-          : await normalizeImageToJpeg(file.blob);
-      form.append("page", page, "character-sheet-page.jpg");
+          ? await renderPdfPageImages(file.blob, file.sheetStartPage)
+          : [await normalizeImageToJpeg(file.blob)];
+      for (const [index, page] of pages.entries()) {
+        form.append("page", page, `page-${index + 1}.jpg`);
+      }
       const response = await fetchImpl(
         `${baseUrl}/sessions/${encodeURIComponent(sessionId)}/extraction`,
         {

@@ -15,10 +15,12 @@ export const SHEET_UPLOAD_ACCEPTED_MIME_TYPES = [
 export const SHEET_UPLOAD_ACCEPT =
   ".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg";
 
-export const SHEET_UPLOAD_MAX_BYTES = 50 * 1024 * 1024;
+export const SHEET_UPLOAD_MAX_BYTES = 8 * 1024 * 1024;
 
 export type SheetUploadValidationCode =
-  "empty" | "unsupported_type" | "too_large";
+  | "empty"
+  | "unsupported_type"
+  | "too_large";
 
 export interface SheetUploadValidationResult {
   valid: boolean;
@@ -53,7 +55,7 @@ export function validateSheetUploadFile(
     return {
       valid: false,
       code: "too_large",
-      message: "The document is larger than 50 MiB and cannot be imported.",
+      message: "The document is larger than 8 MiB and cannot be imported.",
     };
   }
   if (file.size <= 0) {

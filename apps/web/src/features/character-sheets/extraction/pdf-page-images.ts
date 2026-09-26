@@ -1,23 +1,11 @@
 const MAX_VISUAL_PAGES = 3;
 const MAX_PAGE_EDGE = 1600;
 
-export async function getPdfPageCount(file: Blob): Promise<number> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const loadingTask = pdfjs.getDocument({
-    data: new Uint8Array(await file.arrayBuffer()),
-  });
-  try {
-    return (await loadingTask.promise).numPages;
-  } finally {
-    await loadingTask.destroy();
-  }
-}
-
-/** Renders the user-selected PDF page in the browser for visual extraction. */
-export async function renderPdfPageImage(
+/** Renders only the requested PDF pages in the browser for visual extraction. */
+export async function renderPdfPageImages(
   file: Blob,
   startPage = 1,
-): Promise<Blob> {
+): Promise<Blob[]> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   // PDF.js requires an explicit ESM worker URL when bundled by Next.js.
   pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -29,28 +17,36 @@ export async function renderPdfPageImage(
   });
   try {
     const pdf = await loadingTask.promise;
-    if (startPage < 1 || startPage > pdf.numPages) {
-      throw new Error("The selected PDF page does not exist.");
+    const pages: Blob[] = [];
+    for (
+      let pageNumber = startPage;
+      pageNumber <= Math.min(pdf.numPages, startPage + MAX_VISUAL_PAGES - 1);
+      pageNumber += 1
+    ) {
+      const page = await pdf.getPage(pageNumber);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(
+        2,
+        MAX_PAGE_EDGE / Math.max(base.width, base.height),
+      );
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const context = canvas.getContext("2d");
+      if (context === null) throw new Error("PDF pages cannot be rendered.");
+      await page.render({ canvas, canvasContext: context, viewport }).promise;
+      const image = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/jpeg", 0.82),
+      );
+      if (image === null)
+        throw new Error("PDF page image could not be created.");
+      pages.push(image);
+      page.cleanup();
     }
-    const page = await pdf.getPage(startPage);
-    const base = page.getViewport({ scale: 1 });
-    const scale = Math.min(
-      2,
-      MAX_PAGE_EDGE / Math.max(base.width, base.height),
-    );
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.ceil(viewport.width);
-    canvas.height = Math.ceil(viewport.height);
-    const context = canvas.getContext("2d");
-    if (context === null) throw new Error("PDF pages cannot be rendered.");
-    await page.render({ canvas, canvasContext: context, viewport }).promise;
-    const image = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.82),
-    );
-    page.cleanup();
-    if (image === null) throw new Error("PDF page image could not be created.");
-    return image;
+    if (pages.length === 0)
+      throw new Error("The selected PDF pages do not exist.");
+    return pages;
   } finally {
     await loadingTask.destroy();
   }

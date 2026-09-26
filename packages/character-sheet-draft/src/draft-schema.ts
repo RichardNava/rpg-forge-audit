@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { draftError } from "./errors";
 
-export const CHARACTER_SHEET_DRAFT_VERSION = "1" as const;
+export const CHARACTER_SHEET_DRAFT_VERSION = "2" as const;
 
 /** A draft surface holds at most the generation pipeline's field budget. */
 export const MAX_DRAFT_SURFACE_FIELDS = 192;
@@ -119,30 +119,28 @@ export const DraftFieldSchema = z
   });
 export type DraftField = z.infer<typeof DraftFieldSchema>;
 
-export const DraftNodeRefSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("field"), key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern) }),
-  z.strictObject({ kind: z.literal("section"), key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern) }),
-]);
-export type DraftNodeRef = z.infer<typeof DraftNodeRefSchema>;
-
 /** A system-agnostic visual grouping. Parent links preserve arbitrary sheet hierarchy. */
 export const DraftSectionSchema = z.strictObject({
   key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern),
   title: z.string().min(1).max(MAX_DRAFT_FIELD_LABEL_CHARS).regex(/\S/),
-  parentKey: z
-    .string()
-    .min(1)
-    .max(MAX_DRAFT_FIELD_KEY_CHARS)
-    .regex(draftKeyPattern)
-    .optional(),
-  fieldKeys: z
-    .array(
-      z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern),
-    )
-    .max(MAX_DRAFT_SURFACE_FIELDS),
-  nodeOrder: z.array(DraftNodeRefSchema).max(MAX_DRAFT_SURFACE_FIELDS + MAX_DRAFT_SECTIONS).optional(),
 });
 export type DraftSection = z.infer<typeof DraftSectionSchema>;
+
+export const DraftPlacementKindSchema = z.enum(["field", "section"]);
+
+export const DraftPlacementSchema = z.discriminatedUnion("kind", [
+  z.strictObject({
+    kind: z.literal("field"),
+    key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern),
+    parentKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern).nullable(),
+  }),
+  z.strictObject({
+    kind: z.literal("section"),
+    key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern),
+    parentKey: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern).nullable(),
+  }),
+]);
+export type DraftPlacement = z.infer<typeof DraftPlacementSchema>;
 
 export const DraftSourceSchema = z.strictObject({
   sourceSheetId: z.string().max(MAX_DRAFT_SOURCE_ID_CHARS).nullable(),
@@ -169,7 +167,7 @@ export const CharacterSheetDraftSchema = z
     rulesContextId: z.string().max(128).nullable(),
     fields: z.array(DraftFieldSchema).min(1).max(MAX_DRAFT_SURFACE_FIELDS),
     sections: z.array(DraftSectionSchema).max(MAX_DRAFT_SECTIONS).optional(),
-    rootNodeOrder: z.array(DraftNodeRefSchema).max(MAX_DRAFT_SURFACE_FIELDS + MAX_DRAFT_SECTIONS).optional(),
+    structure: z.array(DraftPlacementSchema),
     values: z
       .record(z.string(), DraftValueSchema)
       .superRefine((value, context) => {
@@ -200,69 +198,109 @@ export const CharacterSheetDraftSchema = z
         message: "Draft section keys must be unique.",
       });
     }
-    const assignedFields = new Set<string>();
-    for (const section of sections) {
-      if (
-        section.parentKey !== undefined &&
-        !sectionKeys.has(section.parentKey)
-      ) {
+    // Structure validation
+    const structure = draft.structure ?? [];
+    const placementKeys = new Set<string>();
+
+    for (const placement of structure) {
+      const compositeKey = `${placement.kind}:${placement.key}`;
+      if (placementKeys.has(compositeKey)) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
-          message: `Draft section "${section.key}" references an unknown parent.`,
+          message: `Duplicate placement for ${placement.kind} "${placement.key}".`,
         });
       }
-      if (section.nodeOrder !== undefined) {
-        const refs = section.nodeOrder;
-        const identities = refs.map((ref) => `${ref.kind}:${ref.key}`);
-        if (new Set(identities).size !== identities.length) {
-          context.addIssue({ code: z.ZodIssueCode.custom, message: `Draft section "${section.key}" has duplicate node order entries.` });
-        }
-        const orderedFields = refs.filter((ref) => ref.kind === "field").map((ref) => ref.key);
-        if (orderedFields.length !== section.fieldKeys.length || orderedFields.some((key) => !section.fieldKeys.includes(key))) {
-          context.addIssue({ code: z.ZodIssueCode.custom, message: `Draft section "${section.key}" node order does not match its fields.` });
-        }
-        for (const ref of refs) {
-          if ((ref.kind === "field" && !fieldKeys.has(ref.key)) || (ref.kind === "section" && !sectionKeys.has(ref.key))) context.addIssue({ code: z.ZodIssueCode.custom, message: `Draft section "${section.key}" node order references an unknown node.` });
-          if (ref.kind === "section" && sections.find((candidate) => candidate.key === ref.key)?.parentKey !== section.key) context.addIssue({ code: z.ZodIssueCode.custom, message: `Draft section "${section.key}" node order references a non-child section.` });
-        }
-      }
-      for (const fieldKey of section.fieldKeys) {
-        if (!fieldKeys.has(fieldKey) || assignedFields.has(fieldKey)) {
+      placementKeys.add(compositeKey);
+
+if (placement.kind === "field") {
+        if (!fieldKeys.has(placement.key)) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Draft section "${section.key}" has an invalid field membership.`,
+            message: `Field placement references unknown field "${placement.key}".`,
           });
         }
-        assignedFields.add(fieldKey);
-      }
-    }
-    if (draft.rootNodeOrder !== undefined) {
-      const identities = draft.rootNodeOrder.map((ref) => `${ref.kind}:${ref.key}`);
-      if (new Set(identities).size !== identities.length) context.addIssue({ code: z.ZodIssueCode.custom, message: "Draft root node order has duplicate entries." });
-      for (const ref of draft.rootNodeOrder) {
-        if ((ref.kind === "field" && !fieldKeys.has(ref.key)) || (ref.kind === "section" && !sectionKeys.has(ref.key))) context.addIssue({ code: z.ZodIssueCode.custom, message: "Draft root node order references an unknown node." });
-        if (ref.kind === "section" && sections.find((section) => section.key === ref.key)?.parentKey !== undefined) context.addIssue({ code: z.ZodIssueCode.custom, message: "Draft root node order references a non-root section." });
-      }
-    }
-    for (const section of sections) {
-      const visited = new Set<string>([section.key]);
-      let parentKey = section.parentKey;
-      let depth = 0;
-      while (parentKey !== undefined) {
-        if (visited.has(parentKey) || depth >= MAX_DRAFT_SECTION_DEPTH) {
+      } else {
+        if (!sectionKeys.has(placement.key)) {
           context.addIssue({
             code: z.ZodIssueCode.custom,
-            message: `Draft section "${section.key}" has an invalid parent hierarchy.`,
+            message: `Section placement references unknown section "${placement.key}".`,
+          });
+        }
+      }
+
+      if (placement.parentKey !== null) {
+        if (!sectionKeys.has(placement.parentKey)) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Placement for ${placement.kind} "${placement.key}" references unknown parent section "${placement.parentKey}".`,
+          });
+        }
+        if (placement.parentKey === placement.key) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Node "${placement.key}" cannot parent itself.`,
+          });
+        }
+      }
+    }
+
+    // Cycle detection and depth validation
+    const parentMap = new Map<string, string | null>();
+    for (const placement of structure) {
+      if (placement.kind === "section") {
+        parentMap.set(placement.key, placement.parentKey);
+      }
+    }
+
+    for (const section of sections) {
+      let depth = 0;
+      let current = parentMap.get(section.key);
+      const visited = new Set<string>([section.key]);
+      while (current !== null && current !== undefined) {
+        if (visited.has(current) || depth >= MAX_DRAFT_SECTION_DEPTH) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Section "${section.key}" has an invalid parent hierarchy.`,
           });
           break;
         }
-        visited.add(parentKey);
-        parentKey = sections.find(
-          (candidate) => candidate.key === parentKey,
-        )?.parentKey;
+        visited.add(current);
+        current = parentMap.get(current);
         depth += 1;
       }
+      if (depth > MAX_DRAFT_SECTION_DEPTH) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Section "${section.key}" exceeds maximum depth of ${MAX_DRAFT_SECTION_DEPTH}.`,
+        });
+      }
     }
+
+    // Verify preorder and contiguous subtrees
+    const expectedOrder = computeExpectedPreorder(draft);
+    if (JSON.stringify(expectedOrder) !== JSON.stringify(structure)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Structure array is not in valid preorder or has non-contiguous subtrees.",
+      });
+    }
+
+    // Ensure every field and section has exactly one placement
+    const fieldPlacements = structure.filter((p) => p.kind === "field");
+    const sectionPlacements = structure.filter((p) => p.kind === "section");
+    if (fieldPlacements.length !== draft.fields.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Every field must have exactly one placement.",
+      });
+    }
+    if (sectionPlacements.length !== sections.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Every section must have exactly one placement.",
+      });
+    }
+
     for (const entry of Object.keys(draft.values)) {
       if (!fieldKeys.has(entry)) {
         context.addIssue({
@@ -290,21 +328,202 @@ export const CharacterSheetDraftSchema = z
 export type CharacterSheetDraft = z.infer<typeof CharacterSheetDraftSchema>;
 
 /**
- * Parses untrusted input into a valid draft snapshot, enforcing every schema
- * bound above. Throws `DraftError("invalid_draft")` on rejection.
+ * Computes the expected preorder traversal from the content registries and structure.
+ * Used for validation that structure[] is in valid preorder with contiguous subtrees.
  */
-export function validateDraft(value: unknown): CharacterSheetDraft {
-  const result = CharacterSheetDraftSchema.safeParse(value);
-  if (!result.success) {
-    const first = result.error.issues[0];
-    throw draftError(
-      "invalid_draft",
-      first === undefined
-        ? "The draft is invalid."
-        : `The draft is invalid: ${first.message}`,
-    );
+function computeExpectedPreorder(draft: CharacterSheetDraft): DraftPlacement[] {
+  const result: DraftPlacement[] = [];
+  const structure = draft.structure ?? [];
+
+  // Build children map from structure
+  const childrenByParent = new Map<string | null, DraftPlacement[]>();
+  for (const placement of draft.structure ?? []) {
+    const parentKey = placement.parentKey ?? null;
+    if (!childrenByParent.has(placement.parentKey)) {
+      childrenByParent.set(placement.parentKey, []);
+    }
+    childrenByParent.get(placement.parentKey)!.push(placement);
   }
-  return result.data;
+
+  function visit(parentKey: string | null) {
+    const children = childrenByParent.get(parentKey) ?? [];
+    for (const child of children) {
+      result.push(child);
+      if (child.kind === "section") {
+        visit(child.key);
+      }
+    }
+  }
+
+  visit(null);
+  return result;
+}
+
+/**
+ * Legacy V1 types for compatibility
+ */
+export const LegacyDraftSectionSchema = z.strictObject({
+  key: z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern),
+  title: z.string().min(1).max(MAX_DRAFT_FIELD_LABEL_CHARS).regex(/\S/),
+  parentKey: z
+    .string()
+    .min(1)
+    .max(MAX_DRAFT_FIELD_KEY_CHARS)
+    .regex(draftKeyPattern)
+    .optional(),
+  fieldKeys: z
+    .array(
+      z.string().min(1).max(MAX_DRAFT_FIELD_KEY_CHARS).regex(draftKeyPattern),
+    )
+    .max(MAX_DRAFT_SURFACE_FIELDS),
+});
+export type LegacyDraftSection = z.infer<typeof LegacyDraftSectionSchema>;
+
+export const LegacyCharacterSheetDraftSchema = z
+  .strictObject({
+    schemaVersion: z.literal("1"),
+    draftId: DraftIdentitySchema,
+    sessionId: DraftIdentitySchema,
+    baseVersion: z.number().int().min(1),
+    version: z.number().int().min(1),
+    mode: z.enum(["pc", "npc"]),
+    characterName: z.string().max(256).nullable(),
+    rulesContextId: z.string().max(128).nullable(),
+    fields: z.array(DraftFieldSchema).min(1).max(MAX_DRAFT_SURFACE_FIELDS),
+    sections: z.array(LegacyDraftSectionSchema).max(MAX_DRAFT_SECTIONS).optional(),
+    values: z
+      .record(z.string(), DraftValueSchema)
+      .superRefine((value, context) => {
+        if (Object.keys(value).length > MAX_DRAFT_VALUES_FIELDS) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `A draft may carry at most ${MAX_DRAFT_VALUES_FIELDS} values.`,
+          });
+        }
+      }),
+    source: DraftSourceSchema,
+    confirmed: z.boolean().default(false),
+  });
+export type LegacyCharacterSheetDraft = z.infer<typeof LegacyCharacterSheetDraftSchema>;
+
+/**
+ * Migrates a legacy V1 draft to the canonical V2 format.
+ * Preserves the exact visible ordering from the V1 format.
+ */
+export function migrateCharacterSheetDraftV1ToV2(
+  legacy: LegacyCharacterSheetDraft
+): CharacterSheetDraft {
+  const sections = legacy.sections ?? [];
+  const sectionMap = new Map(sections.map((s) => [s.key, s]));
+  const assignedFields = new Set(sections.flatMap((s) => s.fieldKeys));
+
+  const structure: DraftPlacement[] = [];
+
+  function visitSection(sectionKey: string, parentKey: string | null) {
+    const section = sectionMap.get(sectionKey);
+    if (!section) return;
+
+    // Emit the section itself
+    result.push({ kind: "section", key: section.key, parentKey: section.parentKey ?? null });
+
+    // Emit fields in this section (in fieldKeys order)
+    for (const fieldKey of section.fieldKeys) {
+      const field = legacy.fields.find((f) => f.key === fieldKey);
+      if (field) {
+        result.push({ kind: "field", key: fieldKey, parentKey: section.key });
+      }
+    }
+
+    // Visit child sections in the order they appear in sections array
+    const children = legacy.sections
+      ?.filter((s) => s.parentKey === section.key)
+      .sort((a, b) => legacy.sections!.indexOf(a) - legacy.sections!.indexOf(b));
+
+    if (children) {
+      for (const child of children) {
+        visitSection(child.key, section.key);
+      }
+    }
+  }
+
+  const result: DraftPlacement[] = [];
+
+  // Root sections in order
+  const rootSections = legacy.sections
+    ?.filter((s) => s.parentKey === undefined)
+    .sort((a, b) => legacy.sections!.indexOf(a) - legacy.sections!.indexOf(b));
+
+  if (rootSections) {
+    for (const section of rootSections) {
+      visitSection(section.key, null);
+    }
+  }
+
+  // Unassigned fields at root (after all sections)
+  const assignedFieldsRoot = new Set(
+    (legacy.sections ?? []).flatMap((s) => s.fieldKeys)
+  );
+  for (const field of legacy.fields) {
+    if (!assignedFieldsRoot.has(field.key)) {
+      result.push({ kind: "field", key: field.key, parentKey: null });
+    }
+  }
+
+  const migrated: CharacterSheetDraft = {
+    schemaVersion: "2",
+    draftId: legacy.draftId,
+    sessionId: legacy.sessionId,
+    baseVersion: legacy.baseVersion,
+    version: legacy.version,
+    mode: legacy.mode,
+    characterName: legacy.characterName,
+    rulesContextId: legacy.rulesContextId,
+    fields: legacy.fields,
+    sections: legacy.sections?.map((s) => ({
+      key: s.key,
+      title: s.title,
+    })) ?? [],
+    values: legacy.values,
+    structure: result,
+    source: legacy.source,
+    confirmed: legacy.confirmed,
+  };
+
+  // Validate the migrated draft
+  return validateDraft(migrated);
+}
+
+/**
+ * Parses and validates a draft, accepting both V1 and V2 formats.
+ * Returns a canonical V2 draft.
+ */
+export function parseCanonicalCharacterSheetDraft(
+  input: unknown
+): CharacterSheetDraft {
+  // Try V2 first
+  const v2Result = CharacterSheetDraftSchema.safeParse(input);
+  if (v2Result.success) {
+    return v2Result.data;
+  }
+
+  // Try V1
+  const v1Result = LegacyCharacterSheetDraftSchema.safeParse(input);
+  if (v1Result.success) {
+    return migrateCharacterSheetDraftV1ToV2(v1Result.data);
+  }
+
+  throw draftError(
+    "invalid_draft",
+    "Input is neither a valid V1 nor V2 character sheet draft."
+  );
+}
+
+/**
+ * Validates a draft input, accepting both V1 and V2 formats.
+ * Returns a canonical V2 draft.
+ */
+export function validateDraft(input: unknown): CharacterSheetDraft {
+  return parseCanonicalCharacterSheetDraft(input);
 }
 
 /**
@@ -330,42 +549,4 @@ export function draftForwardCompatibility(
     allExportableSystems: true,
     boundedKeys: true,
   };
-}
-
-export function getRootNodeOrder(draft: CharacterSheetDraft): DraftNodeRef[] {
-  const sections = draft.sections ?? [];
-  const assigned = new Set(sections.flatMap((section) => section.fieldKeys));
-  return draft.rootNodeOrder ?? [
-    ...draft.fields.filter((field) => !assigned.has(field.key)).map((field) => ({ kind: "field" as const, key: field.key })),
-    ...sections.filter((section) => section.parentKey === undefined).map((section) => ({ kind: "section" as const, key: section.key })),
-  ];
-}
-
-export function getOrderedNodes(draft: CharacterSheetDraft, parentKey: string | null): DraftNodeRef[] {
-  if (parentKey === null) return getRootNodeOrder(draft);
-  const section = draft.sections?.find((s) => s.key === parentKey);
-  if (!section) return [];
-  const assigned = new Set(section.fieldKeys);
-  return section.nodeOrder ?? [
-    ...section.fieldKeys.map((key) => ({ kind: "field" as const, key })),
-    ...(draft.sections ?? []).filter((child) => child.parentKey === parentKey).map((child) => ({ kind: "section" as const, key: child.key })),
-  ];
-}
-
-export function getFieldParentKey(draft: CharacterSheetDraft, fieldKey: string): string | null {
-  return draft.sections?.find((section) => section.fieldKeys.includes(fieldKey))?.key ?? null;
-}
-
-export function getSectionParentKey(draft: CharacterSheetDraft, sectionKey: string): string | null {
-  return draft.sections?.find((section) => section.key === sectionKey)?.parentKey ?? null;
-}
-
-export function isDescendant(sections: readonly DraftSection[], ancestorKey: string, descendantKey: string): boolean {
-  let currentKey: string | undefined = descendantKey;
-  while (currentKey !== undefined) {
-    if (currentKey === ancestorKey) return true;
-    const section = sections.find((s) => s.key === currentKey);
-    currentKey = section?.parentKey;
-  }
-  return false;
 }

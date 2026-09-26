@@ -16,7 +16,6 @@ import {
   type SheetStoreMutationOutcome,
   type SheetStoreRerollOutcome,
   type SheetStoreState,
-  type SheetStoreUndoOutcome,
   type WorkshopPreferences,
 } from "./sheet-store-types";
 
@@ -357,48 +356,6 @@ export function createSheetStore(options: SheetStoreOptions): SheetStore {
           error: null,
         });
         return { kind: "ok", draft: confirmed };
-      } catch (error) {
-        const sheetError = toSheetApiError(error);
-        setState({ saveStatus: "error", error: sheetError });
-        await reconcile();
-        return { kind: "error", error: sheetError };
-      }
-    },
-
-    async undo(): Promise<SheetStoreUndoOutcome> {
-      if (
-        !hasSession() ||
-        state.draft === null ||
-        state.sessionId === null ||
-        state.accessToken === null
-      ) {
-        return { kind: "not_ready" };
-      }
-      if (state.saveStatus === "saving") {
-        return { kind: "inflight" };
-      }
-
-      const { sessionId, accessToken, draft } = state;
-      setState({
-        saveStatus: "saving",
-        error: null,
-        rerolledKeys: null,
-      });
-
-      try {
-        const undone = await options.api.undoDraft(
-          sessionId,
-          accessToken,
-          draft.draftId,
-          draft.version,
-        );
-        setState({
-          draft: undone,
-          saveStatus: "saved",
-          savedVersion: undone.version,
-          error: null,
-        });
-        return { kind: "ok", draft: undone };
       } catch (error) {
         const sheetError = toSheetApiError(error);
         setState({ saveStatus: "error", error: sheetError });

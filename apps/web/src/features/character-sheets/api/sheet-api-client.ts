@@ -67,12 +67,6 @@ export interface SheetApiClientPort {
     accessToken: string,
     draftId: string,
   ): Promise<CharacterSheetDraft>;
-  undoDraft(
-    sessionId: string,
-    accessToken: string,
-    draftId: string,
-    expectedVersion: number,
-  ): Promise<CharacterSheetDraft>;
 }
 
 export class SheetApiClient implements SheetApiClientPort {
@@ -186,21 +180,6 @@ export class SheetApiClient implements SheetApiClientPort {
     return parseJsonBody(response, CharacterSheetDraftSchema);
   }
 
-  async undoDraft(
-    sessionId: string,
-    accessToken: string,
-    draftId: string,
-    expectedVersion: number,
-  ): Promise<CharacterSheetDraft> {
-    const response = await this.request({
-      method: "POST",
-      url: this.undoUrl(sessionId, draftId),
-      accessToken,
-      body: { expectedVersion },
-    });
-    return parseJsonBody(response, CharacterSheetDraftSchema);
-  }
-
   private request(input: {
     method: string;
     url: string;
@@ -268,12 +247,6 @@ export class SheetApiClient implements SheetApiClientPort {
     assertIdentitySegment(sessionId, "sessionId");
     assertIdentitySegment(draftId, "draftId");
     return `${this.baseUrl}/sessions/${sessionId}/drafts/${draftId}/confirm`;
-  }
-
-  private undoUrl(sessionId: string, draftId: string): string {
-    assertIdentitySegment(sessionId, "sessionId");
-    assertIdentitySegment(draftId, "draftId");
-    return `${this.baseUrl}/sessions/${sessionId}/drafts/${draftId}/undo`;
   }
 }
 

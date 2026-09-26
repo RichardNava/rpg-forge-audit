@@ -2,6 +2,7 @@ import {
   initialDraftVersion,
   type CharacterSheetDraft,
   type DraftField,
+  type DraftPlacement,
   type DraftSection,
   type DraftValue,
 } from "@repo/character-sheet-draft";
@@ -19,8 +20,10 @@ export function compileExtractedCharacterStructure(input: {
   const structure = ExtractedCharacterStructureSchema.parse(input.structure);
   const fields: DraftField[] = [];
   const sections: DraftSection[] = [];
+  const placements: DraftPlacement[] = [];
   const values: Record<string, DraftValue> = {};
   const used = new Set<string>();
+
   const visit = (
     nodes: readonly ExtractedCharacterNode[],
     parentKey?: string,
@@ -28,12 +31,8 @@ export function compileExtractedCharacterStructure(input: {
     for (const node of nodes) {
       if (node.kind === "section") {
         const key = uniqueKey(node.label, used);
-        sections.push({
-          key,
-          title: node.label,
-          ...(parentKey === undefined ? {} : { parentKey }),
-          fieldKeys: [],
-        });
+        sections.push({ key, title: node.label });
+        placements.push({ kind: "section", key, parentKey: parentKey ?? null });
         visit(node.children, key);
         continue;
       }
@@ -56,27 +55,27 @@ export function compileExtractedCharacterStructure(input: {
           : {}),
       };
       fields.push(field);
-      if (parentKey !== undefined)
-        sections
-          .find((section) => section.key === parentKey)
-          ?.fieldKeys.push(key);
+      placements.push({ kind: "field", key, parentKey: parentKey ?? null });
       if (node.value !== undefined && valueMatches(type, node.value))
         values[key] = node.value;
     }
   };
+
   visit(structure.nodes);
   if (fields.length === 0)
     throw new Error("Observed structure contains no editable fields.");
+
   return initialDraftVersion({
-    schemaVersion: "1",
+    schemaVersion: "2",
     draftId: crypto.randomUUID(),
     sessionId: input.sessionId,
     mode: "pc",
     characterName: null,
     rulesContextId: null,
     fields,
+    sections,
+    structure: placements,
     values,
-    ...(sections.length === 0 ? {} : { sections }),
     source: { sourceSheetId: input.sourceSheetId, sourceRunId: null },
     confirmed: false,
   });

@@ -19,8 +19,6 @@ export interface LocalSheetBackendOptions {
   clock?: () => Date;
 }
 
-type LocalDraftHistory = Map<number, CharacterSheetDraft>;
-
 /**
  * In-memory `SheetApiClientPort` used in development when no rules-worker /
  * Turnstile secret is available. It exercises the real domain rules (same
@@ -36,17 +34,7 @@ export function createLocalSheetBackend(
     { sessionId: string; accessToken: string }
   >();
   const drafts = new Map<string, CharacterSheetDraft>();
-  const draftHistories = new Map<string, LocalDraftHistory>();
   const now = options.clock ?? (() => new Date());
-
-  function saveDraftHistory(draftId: string, draft: CharacterSheetDraft): void {
-    let history = draftHistories.get(draftId);
-    if (!history) {
-      history = new Map();
-      draftHistories.set(draftId, history);
-    }
-    history.set(draft.version, draft);
-  }
 
   return {
     async createSession(): Promise<SheetSession> {
@@ -84,7 +72,6 @@ export function createLocalSheetBackend(
     ): Promise<CharacterSheetDraft> {
       const draft = validateDraft(snapshot);
       drafts.set(draft.draftId, draft);
-      saveDraftHistory(draft.draftId, draft);
       return draft;
     },
 
@@ -113,7 +100,6 @@ export function createLocalSheetBackend(
       const mutated = applyDraftMutation(current, mutation);
       const committed = validateDraft(bumpDraftVersion(mutated));
       drafts.set(draftId, committed);
-      saveDraftHistory(draftId, committed);
       return committed;
     },
 
@@ -130,7 +116,6 @@ export function createLocalSheetBackend(
       const result = rerollLockedDraftValues(current, seed);
       const committed = validateDraft(bumpDraftVersion(result.draft));
       drafts.set(draftId, committed);
-      saveDraftHistory(draftId, committed);
       return { draft: committed, rerolledKeys: result.rerolledKeys };
     },
 
@@ -145,43 +130,7 @@ export function createLocalSheetBackend(
       }
       const confirmed = validateDraft(finalizeDraft(current));
       drafts.set(draftId, confirmed);
-      saveDraftHistory(draftId, confirmed);
       return confirmed;
-    },
-
-    async undoDraft(
-      _sessionId: string,
-      _accessToken: string,
-      draftId: string,
-      expectedVersion: number,
-    ): Promise<CharacterSheetDraft> {
-      const current = drafts.get(draftId);
-      if (current === undefined) {
-        throw new Error("Draft not found.");
-      }
-      if (current.version !== expectedVersion) {
-        throw new Error("The draft version does not match the expected version.");
-      }
-      if (current.confirmed === true) {
-        throw new Error("The draft is already confirmed and is read-only.");
-      }
-      if (expectedVersion <= 1) {
-        throw new Error("Cannot undo the initial draft version.");
-      }
-
-      const history = draftHistories.get(draftId);
-      if (!history) {
-        throw new Error("Draft history not found.");
-      }
-      const previousDraft = history.get(expectedVersion - 1);
-      if (!previousDraft) {
-        throw new Error("Previous draft version not found.");
-      }
-
-      const nextVersion = bumpDraftVersion(previousDraft);
-      drafts.set(draftId, nextVersion);
-      saveDraftHistory(draftId, nextVersion);
-      return nextVersion;
     },
   };
 }
